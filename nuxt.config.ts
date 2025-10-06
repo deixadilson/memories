@@ -2,6 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  css: ['~/assets/main.css'],
   modules: ['@nuxtjs/supabase'],
   supabase: {
     url: process.env.SUPABASE_URL,
