@@ -13,7 +13,17 @@ const props = defineProps<{
   };
   onEdit?: () => void;
 }>();
+
 const displayMedia = props.memory.image ? [props.memory.image] : props.memory.mediaUrls;
+
+const categoryIcons = {
+  travel: 'lucide:plane',
+  education: 'lucide:graduation-cap',
+  family: 'lucide:heart',
+  work: 'lucide:briefcase',
+  personal: 'lucide:user',
+  milestone: 'lucide:award'
+};
 </script>
 
 <template>
@@ -37,22 +47,22 @@ const displayMedia = props.memory.image ? [props.memory.image] : props.memory.me
         </div>
         <div class="aside">
           <div :class="`badge ${memory.category}`">
-            <img :src="`/icons/${memory.category}.svg`" class="icon"/>
+            <Icon :name="categoryIcons[memory.category]" class="icon"/>
             {{memory.category}}
           </div>
-          <button v-if="onEdit" @click="onEdit" className="h-8 w-8 p-0">
-            <img :src="`/icons/pen.svg`"/>
+          <button v-if="onEdit" @click="onEdit">
+            <Icon name="lucide:pen" />
           </button>
         </div>
       </div>
       <p class="description">{{memory.description}}</p>
-      <div v-if="memory.location || memory.people" class="card-footer" className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
-        <div v-if="memory.location" class="location" className="flex items-center gap-1 text-sm text-muted-foreground">
-          <img src="/icons/travel.svg" class="icon" alt="Location"/>
+      <div v-if="memory.location || memory.people" class="card-footer">
+        <div v-if="memory.location" class="location">
+          <Icon name="lucide:map-pin" class="icon" alt="Location" />
           {{memory.location}}
         </div>
-        <div v-if="memory.people && memory.people.length > 0" class="people" className="flex items-center gap-1 text-sm text-muted-foreground">
-          <img src="/icons/personal.svg" class="icon" alt="People"/>
+        <div v-if="memory.people && memory.people.length > 0" class="people">
+          <Icon name="lucide:user" class="icon" alt="People"/>
           {{memory.people.join(', ')}}
         </div>
       </div>
@@ -152,7 +162,7 @@ img.icon {
   gap: .5rem;
   padding-top: .5rem;
   border-top: 1px solid hsl(var(--border) / .3);
-  margin-top: 1rem;
+  margin-top: 1rem; /*? */
 }
 .location, .people {
   display: flex;

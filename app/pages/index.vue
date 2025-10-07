@@ -25,7 +25,7 @@
           <div class="card" v-for="(feature, index) in features" :key="feature.title" :style="`animation-delay: ${index * 0.1}s`">
             <div class="feature-wrapper">
               <div class="feature-icon">
-                <img :src="`/icons/${feature.icon}.svg`" width="32" height="32" class="icon" :style="`color: ${feature.color}`"/>
+                <Icon :name="feature.icon" class="icon" :style="`color: ${feature.color}`"/>
               </div>
               <h3>{{feature.title}}</h3>
               <p>{{feature.description}}</p>
@@ -67,37 +67,37 @@
 <script setup>
 const features = [
   {
-    icon: 'clock',
+    icon: 'lucide:clock',
     title: "Linha do Tempo",
     description: "Organize suas memórias cronologicamente e veja sua história se desenrolar",
     color: "#f0c442"
   },
   {
-    icon: 'personal',
+    icon: 'lucide:users',
     title: "Conecte Pessoas",
     description: "Relacione familiares, amigos e colegas às suas memórias especiais",
     color: "#edd4d8"
   },
   {
-    icon: 'map',
+    icon: 'lucide:map',
     title: "Lugares Especiais",
     description: "Marque locais importantes e crie um mapa da sua jornada de vida",
     color: "#bac1c4"
   },
   {
-    icon: 'camera',
+    icon: 'lucide:camera',
     title: "Fotos & Vídeos",
     description: "Adicione mídias para dar vida às suas memórias mais preciosas",
     color: "#f0c442"
   },
   {
-    icon: 'presentation',
+    icon: 'lucide:presentation',
     title: "Modo Apresentação",
     description: "Transforme suas memórias em uma apresentação envolvente",
     color: "#edd4d8"
   },
   {
-    icon: 'share',
+    icon: 'lucide:share-2',
     title: "Compartilhamento",
     description: "Compartilhe sua história com família e amigos de forma segura",
     color: "#bac1c4"
