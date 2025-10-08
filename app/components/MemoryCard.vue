@@ -162,7 +162,7 @@ img.icon {
   gap: .5rem;
   padding-top: .5rem;
   border-top: 1px solid hsl(var(--border) / .3);
-  margin-top: 1rem; /*? */
+  margin-top: 1rem;
 }
 .location, .people {
   display: flex;

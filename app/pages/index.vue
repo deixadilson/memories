@@ -6,8 +6,8 @@
         <h1>Suas Memórias, <span>Sua História</span></h1>
         <p>Crie sua biografia digital conectando lugares, pessoas e momentos especiais. Registre sua história em uma linha do tempo única e compartilhável</p>
         <div class="hero-buttons">
-          <button class="btn-primary">Começar Minha História</button>
-          <button class="btn-secondary">Ver Exemplo</button>
+          <NuxtLink to="/user/register" class="btn primary">Começar Minha História</NuxtLink>
+          <a href="#timeline-example" class="btn secondary">Ver Exemplo</a>
         </div>
       </div>
       <div class="float dot-1"></div>
@@ -35,7 +35,7 @@
       </div>
     </section>
 
-    <section class="timeline">
+    <section class="timeline" id="timeline-example">
       <div class="section-wrapper">
         <div class="section-header">
           <h2>Sua Linha do <span>Tempo</span></h2>
@@ -55,9 +55,9 @@
         </div>
         <div class="cta">
           <p>Pronto para começar sua própria linha do tempo?</p>
-          <button class="btn-primary">
+          <NuxtLink to="/user/register" class="btn primary">
             Criar Minha História
-          </button>
+          </NuxtLink>
         </div>
       </div>
     </section>
@@ -219,36 +219,14 @@ h1 span {
   align-items: center;
   gap: 1rem;
 }
-button {
-  color: hsl(var(--primary-foreground));
-  height: 2.75rem;
-  padding: .5rem 2rem;
+.btn {
   font-size: 1.125rem;
   line-height: 1.75rem;
-  font-weight: 600;
-  border-radius: .75rem;
-  transition-property: all;
-  transition-timing-function: cubic-bezier(.4, 0, .2, 1);
-  transition-duration: .3s;
-  cursor: pointer;
+  height: 2.75rem;
 }
-.btn-primary {
-  background-color: hsl(var(--gold));
-  box-shadow: 0 4px 20px hsl(var(--gold) / .1);
-}
-.btn-primary:hover {
-  background-color: hsl(var(--gold-light));
+.primary:hover {
   transform: scaleX(1.05) scaleY(1.05);
   backdrop-filter: blur(4px);
-}
-.btn-secondary {
-  box-sizing: border-box;
-  border: #ffffff4d 2px solid;
-  background-color: #ffffff1a;
-}
-.btn-secondary:hover {
-  color: hsl(var(--accent-foreground));
-  background-color: #fff3;
 }
 .float {
   position: absolute;
