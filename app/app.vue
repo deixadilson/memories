@@ -1,6 +1,4 @@
 <template>
-  <div>
-    <NuxtPage />
-    <NuxtSonner />
-  </div>
+  <NuxtPage />
+  <NuxtSonner />
 </template>
