@@ -10,7 +10,7 @@ const dropdown = ref(null);
 
 onClickOutside(dropdown, () => isOpen.value = false);
 
-const firstLetter = computed(() => user.value?.email?.charAt(0).toUpperCase() || '?');
+const firstLetter = computed(() => user.value?.user_metadata.username.charAt(0).toUpperCase() || '?');
 
 const handleLogout = async () => {
   await client.auth.signOut();

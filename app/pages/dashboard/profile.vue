@@ -9,6 +9,7 @@ const user = useSupabaseUser();
 
 const loading = ref(true);
 const username = ref('');
+const avatar_url = ref('');
 const dob = ref('');
 const biography = ref('');
 
@@ -16,8 +17,8 @@ onMounted(async () => {
   if (user.value) {
     const { data, error } = await client
       .from('profiles')
-      .select('username, date_of_birth, biography')
-      .eq('id', user.value.id)
+      .select('username, biography, avatar_url, date_of_birth')
+      .eq('id', user.value.sub)
       .single();
 
     if (error) {
@@ -189,7 +190,7 @@ input, textarea {
   width: 100%;
   font-size: .875rem;
   line-height: 1.25rem;
-  margin-top: 0.5rem;
+  margin-top: .5rem;
   padding: .5rem .75rem;
   border: 1px solid hsl(var(--input));
   border-radius: calc(var(--radius) - 2px);
@@ -205,12 +206,12 @@ input {
   font-size: .875rem;
   line-height: 1.25rem;
   color: hsl(var(--muted-foreground));
-  margin-top: 0.5rem;
+  margin-top: .5rem;
 }
 .form-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: .75rem;
   padding-top: 1.5rem;
 }
 </style>
