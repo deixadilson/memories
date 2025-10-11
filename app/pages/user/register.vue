@@ -13,6 +13,10 @@
         <label for="password">Senha</label>
         <input type="password" id="password" v-model="password" placeholder="••••••••" required />
       </div>
+      <div class="form-group">
+        <label for="confirm-password">Confirmar Senha</label>
+        <input type="password" id="confirm-password" v-model="confirmPassword" placeholder="••••••••" required />
+      </div>
       <button type="submit" class="btn primary" :disabled="loading">
         {{ loading ? 'Cadastrando...' : 'Cadastrar'}}
       </button>
@@ -25,9 +29,10 @@
 </template>
 
 <script setup lang="ts">
+import { toast } from 'vue-sonner';
+
 const client = useSupabaseClient();
 const router = useRouter();
-const { $toast } = useNuxtApp();
 
 const username = ref('');
 const email = ref('');
@@ -38,15 +43,15 @@ const loading = ref(false);
 const handleRegister = async () => {
 
   if (password.value !== confirmPassword.value) {
-    $toast.error('As senhas não coincidem.');
+    toast.error('As senhas não coincidem.');
     return;
   }
   if (password.value.length < 8) {
-    $toast.error('A senha deve ter no mínimo 8 caracteres.');
+    toast.error('A senha deve ter no mínimo 8 caracteres.');
     return;
   }
   if (username.value.length < 3) {
-    $toast.error('O nome de usuário deve ter pelo menos 3 caracteres.');
+    toast.error('O nome de usuário deve ter pelo menos 3 caracteres.');
     return;
   }
 
@@ -63,9 +68,9 @@ const handleRegister = async () => {
   });
 
   if (error) {
-    $toast.error(error.message);
+    toast.error(error.message);
   } else {
-    $toast.success('Registro realizado! Verifique seu e-mail para confirmar a conta.');
+    toast.success('Registro realizado! Verifique seu e-mail para confirmar a conta.');
     router.push('/user/login');
   }
   loading.value = false;

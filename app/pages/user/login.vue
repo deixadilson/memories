@@ -21,9 +21,10 @@
 </template>
 
 <script setup lang="ts">
+import { toast } from 'vue-sonner';
+
 const client = useSupabaseClient();
 const router = useRouter();
-const { $toast } = useNuxtApp();
 
 const email = ref('');
 const password = ref('');
@@ -38,9 +39,9 @@ const handleLogin = async () => {
   });
 
   if (error) {
-    $toast.error(error.message);
+    toast.error(error.message);
   } else {
-    $toast.success('Login realizado com sucesso!');
+    toast.success('Login realizado com sucesso!');
     router.push('/dashboard');
   }
   loading.value = false;

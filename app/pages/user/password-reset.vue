@@ -16,6 +16,8 @@
 </template>
 
 <script setup lang="ts">
+import { toast } from 'vue-sonner';
+
 const client = useSupabaseClient();
 const { $toast } = useNuxtApp();
 const email = ref('');
@@ -28,9 +30,9 @@ const handlePasswordReset = async () => {
   });
 
   if (error) {
-    $toast.error(error.message);
+    toast.error(error.message);
   } else {
-    $toast.info('Um link para redefinição de senha foi enviado para o e-mail informado.');
+    toast.info('Um link para redefinição de senha foi enviado para o e-mail informado.');
   }
   loading.value = false;
 };

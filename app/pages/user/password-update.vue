@@ -17,9 +17,10 @@
 </template>
 
 <script setup lang="ts">
+import { toast } from 'vue-sonner';
+
 const client = useSupabaseClient();
 const router = useRouter();
-const { $toast } = useNuxtApp();
 
 const password = ref('');
 const confirmPassword = ref('');
@@ -27,20 +28,20 @@ const loading = ref(false);
 
 const handleUpdatePassword = async () => {
   if (password.value !== confirmPassword.value) {
-    $toast.error('As senhas não coincidem.');
+    toast.error('As senhas não coincidem.');
     return;
   }
   if (password.value.length < 8) {
-    $toast.error('A nova senha deve ter no mínimo 8 caracteres.');
+    toast.error('A nova senha deve ter no mínimo 8 caracteres.');
     return;
   }
   loading.value = true;
   const { error } = await client.auth.updateUser({ password: password.value });
 
   if (error) {
-    $toast.error(error.message);
+    toast.error(error.message);
   } else {
-    $toast.success('Sua senha foi atualizada com sucesso!');
+    toast.success('Sua senha foi atualizada com sucesso!');
     router.push('/user/login');
   }
   loading.value = false;

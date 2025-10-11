@@ -222,11 +222,20 @@ h1 span {
 .btn {
   font-size: 1.125rem;
   line-height: 1.75rem;
-  height: 2.75rem;
+  font-weight: 600;
+  padding: 1rem 2rem;
 }
 .primary:hover {
   transform: scaleX(1.05) scaleY(1.05);
   backdrop-filter: blur(4px);
+}
+.secondary {
+  border: #ffffff4d 2px solid;
+  background-color: #ffffff1a;
+}
+.secondary:hover {
+  color: hsl(var(--accent-foreground));
+  background-color: #fff3;
 }
 .float {
   position: absolute;
