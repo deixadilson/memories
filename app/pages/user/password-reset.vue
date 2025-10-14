@@ -6,6 +6,7 @@
         <input type="email" id="email" v-model="email" placeholder="seu@email.com" required />
       </div>
       <button type="submit" class="btn primary" :disabled="loading">
+        <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
         {{ loading ? 'Enviando...' : 'Enviar Link de Recuperação' }}
       </button>
     </form>

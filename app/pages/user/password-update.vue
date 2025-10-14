@@ -10,6 +10,7 @@
         <input type="password" id="confirm-password" v-model="confirmPassword" placeholder="••••••••" required />
       </div>
       <button type="submit" class="btn primary" :disabled="loading">
+        <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
         {{ loading ? 'Atualizando...' : 'Atualizar Senha' }}
       </button>
     </form>

@@ -18,7 +18,8 @@
         <input type="password" id="confirm-password" v-model="confirmPassword" placeholder="••••••••" required />
       </div>
       <button type="submit" class="btn primary" :disabled="loading">
-        {{ loading ? 'Cadastrando...' : 'Cadastrar'}}
+        <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
+        {{ loading ? 'Cadastrando...' : 'Cadastrar' }}
       </button>
     </form>
     <div class="switch-page">
@@ -60,10 +61,7 @@ const handleRegister = async () => {
     email: email.value,
     password: password.value,
     options: {
-      data: {
-        username: username.value,
-        avatar_url: `https://api.dicebear.com/9.x/personas/svg?seed=${username.value}`
-      }
+      data: { username: username.value }
     }
   });
 

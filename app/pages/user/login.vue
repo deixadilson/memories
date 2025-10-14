@@ -10,7 +10,8 @@
         <input type="password" id="password" v-model="password" placeholder="••••••••" required />
       </div>
       <button type="submit" class="btn primary" :disabled="loading">
-        {{ loading ? 'Entrando...' : 'Entrar'}}
+        <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
+        {{ loading ? 'Entrando...' : 'Entrar' }}
       </button>
     </form>
     <div class="switch-page">

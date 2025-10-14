@@ -109,6 +109,9 @@ button, .btn {
   height: 1rem;
   margin-right: .5rem;
 }
+.spinner {
+  animation: spin 1s linear infinite;
+}
 
 
 @keyframes fade-in {
@@ -138,4 +141,8 @@ button, .btn {
     opacity: 1;
     transform: translateY(0);
   }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

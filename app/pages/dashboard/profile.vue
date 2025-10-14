@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
+import imageCompression from 'browser-image-compression';
 
 definePageMeta({ layout: 'dashboard' });
 
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
+const firstLetter = computed(() => user.value?.user_metadata.username.charAt(0).toUpperCase() || '?');
+
 const loading = ref(true);
+const uploading = ref(false);
 const username = ref('');
 const avatar_url = ref('');
 const dob = ref('');
@@ -25,12 +29,60 @@ onMounted(async () => {
       toast.error('Erro ao carregar o perfil.');
     } else if (data) {
       username.value = data.username || '';
+      avatar_url.value = data.avatar_url || '';
       dob.value = data.date_of_birth || '';
       biography.value = data.biography || '';
     }
   }
   loading.value = false;
 });
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file || !user.value) return;
+
+  uploading.value = true;
+
+  const options = {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 64,
+    useWebWorker: true,
+  };
+
+  try {
+    const compressedFile = await imageCompression(file, options);
+    const fileExt = compressedFile.name.split('.').pop();
+    const filePath = `${user.value.sub}.${fileExt}`;
+
+    const { error: uploadError } = await client.storage
+      .from('avatars')
+      .upload(filePath, compressedFile, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = client.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    const newAvatarUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
+
+    const { error: dbError } = await client
+      .from('profiles')
+      .update({ avatar_url: newAvatarUrl })
+      .eq('id', user.value.sub);
+
+    if (dbError) throw dbError;
+
+    avatar_url.value = newAvatarUrl;
+    toast.success('Avatar atualizado com sucesso!');
+  } catch (error: any) {
+    toast.error(error.message || 'Falha ao atualizar o avatar.');
+  } finally {
+    uploading.value = false;
+  }
+};
 
 const handleUpdateProfile = async () => {
   loading.value = true;
@@ -43,7 +95,7 @@ const handleUpdateProfile = async () => {
         biography: biography.value,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', user.value.id);
+      .eq('id', user.value.sub);
 
     if (error) {
       toast.error(error.message);
@@ -62,18 +114,25 @@ const handleUpdateProfile = async () => {
         <div class="header-wrapper">
           <div class="header-content">
             <div class="avatar-container">
-              <span>
-                <Icon name="lucide:user" class="avatar"/>
-              </span>
+              <div>
+                <img v-if="avatar_url" :src="avatar_url" alt="Avatar" class="avatar"/>
+                <span v-else>{{ firstLetter }}</span>
+                <div v-if="loading || uploading" class="upload-overlay">
+                  <Icon name="lucide:loader-circle" class="spinner"/>
+                </div>
+              </div>
+              <label for="avatar" title="Alterar Avatar">
+                <Icon name="lucide:camera" class="icon"/>
+              </label>
             </div>
-            <input type="file" name="avatar" accept="image/*" class="hidden" />
+            <input type="file" id="avatar" name="avatar" accept="image/jpeg, image/png, image/gif" class="hidden" @change="handleFileChange" :disabled="uploading"/>
             <div>
               <h3>Meu Perfil</h3>
               <p>Gerencie suas informações pessoais</p>
             </div>
           </div>
           <button class="btn secondary">
-            <Icon name="lucide:external-link" class="icon" />
+            <Icon name="lucide:external-link" class="icon"/>
             Ver Perfil Público
           </button>
         </div>
@@ -82,11 +141,11 @@ const handleUpdateProfile = async () => {
         <form @submit.prevent="handleUpdateProfile">
           <div class="form-group">
             <label for="username">Nome de usuário</label>
-            <input id="username" v-model="username" type="text" />
+            <input id="username" v-model="username" type="text"/>
           </div>
           <div class="form-group">
             <label for="dob">Data de Nascimento</label>
-            <input id="dob" v-model="dob" type="date" />
+            <input id="dob" v-model="dob" type="date"/>
             <p class="helper-text">Ao preencher, criaremos automaticamente um período "Vida" começando nesta data.</p>
           </div>
           <div class="form-group full-width">
@@ -95,6 +154,7 @@ const handleUpdateProfile = async () => {
           </div>
           <div class="form-actions">
             <button class="btn primary" type="submit" :disabled="loading">
+              <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
               {{ loading ? 'Salvando...' : 'Salvar Alterações' }}
             </button>
             <button class="btn secondary" type="button">Cancelar</button>
@@ -139,23 +199,63 @@ const handleUpdateProfile = async () => {
   position: relative;
   cursor: pointer;
 }
-.avatar-container > span {
+.avatar-container > div {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 4rem;
   height: 4rem;
-  background-color: hsl(var(--muted));
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--gold));
   border-radius: 9999px;
-  transition: opacity cubic-bezier(.4, 0, .2, 1) .15s;
+  overflow: hidden;
 }
-.avatar {
+.upload-overlay {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: hsl(var(--silver-light));
+  background-color: hsla(var(--background), 0.7);
+}
+.upload-overlay > .spinner {
   width: 2rem;
   height: 2rem;
 }
+.avatar {
+  width: 4rem;
+  height: 4rem;
+}
 .hidden {
   display: none;
+}
+.avatar-container > label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: hsl(var(--background) / .6);
+  opacity: 0;
+  transition: opacity cubic-bezier(.4, 0, .2, 1) .15s;
+}
+.avatar-container > label > .icon {
+  width: 2rem;
+  height: 2rem;
+  color: hsl(var(--foreground));
+}
+.avatar-container:hover > label {
+  opacity: 1;
+}
+.spinner {
+  animation: spin 1s linear infinite;
 }
 h3 {
   font-size: 1.5rem;
