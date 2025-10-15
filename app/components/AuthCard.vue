@@ -70,14 +70,7 @@ h1 {
   font-weight: 500;
 }
 :deep(input) {
-  display: flex;
-  height: 2.5rem;
-  width: 100%;
-  padding: .5rem 0.75rem;
   margin-top: .5rem;
-  border: 1px solid hsl(var(--input));
-  background-color: hsl(var(--background));
-  border-radius: calc(var(--radius) - 2px);
 }
 :deep(input:focus) {
   outline: none;

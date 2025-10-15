@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      periods: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          location: string | null
+          start_date: string
+          title: string
+          type: Database["public"]["Enums"]["period_type"]
+          updated_at: string | null
+          user_id: string
+          visibility: Database["public"]["Enums"]["visibility_type"]
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          start_date: string
+          title: string
+          type: Database["public"]["Enums"]["period_type"]
+          updated_at?: string | null
+          user_id: string
+          visibility?: Database["public"]["Enums"]["visibility_type"]
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          start_date?: string
+          title?: string
+          type?: Database["public"]["Enums"]["period_type"]
+          updated_at?: string | null
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["visibility_type"]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -52,7 +94,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      period_type:
+        | "residence"
+        | "work"
+        | "education"
+        | "relationship"
+        | "travel"
+        | "project"
+        | "other"
+      visibility_type: "private" | "friends" | "lists" | "public"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -179,6 +229,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      period_type: [
+        "residence",
+        "work",
+        "education",
+        "relationship",
+        "travel",
+        "project",
+        "other",
+      ],
+      visibility_type: ["private", "friends", "lists", "public"],
+    },
   },
 } as const
