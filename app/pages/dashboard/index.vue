@@ -1,10 +1,13 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: 'dashboard',
-});
+definePageMeta({ layout: 'dashboard' });
 
 const user = useSupabaseUser();
 const username = computed(() => user.value?.user_metadata.username || 'Usuário');
+const isModalOpen = ref(false);
+
+function handleSuccess() {
+  console.log('Memória criada, recarregar lista!');
+}
 </script>
 
 <template>
@@ -49,7 +52,7 @@ const username = computed(() => user.value?.user_metadata.username || 'Usuário'
     <section>
       <div class="section-header">
         <h2>Memórias Recentes</h2>
-        <button class="btn primary">
+        <button @click="isModalOpen = true" class="btn primary">
           <Icon name="lucide:plus" class="icon"/>
           Nova Memória
         </button>
@@ -59,12 +62,19 @@ const username = computed(() => user.value?.user_metadata.username || 'Usuário'
         title="Nenhuma memória ainda"
         message="Comece a registrar suas memórias e construa sua história de vida!"
       >
-        <button class="btn primary">
+        <button @click="isModalOpen = true" class="btn primary">
           <Icon name="lucide:plus" class="icon"/>
           Criar Primeira Memória
         </button>
       </EmptyState>
     </section>
+    <Modal
+      :is-open="isModalOpen"
+      title="Criar Nova Memória"
+      @close="isModalOpen = false"
+    >
+      <MemoryForm @close="isModalOpen = false" @success="handleSuccess"/>
+    </Modal>
   </div>
 </template>
 

@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      memories: {
+        Row: {
+          category: Database["public"]["Enums"]["memory_category"]
+          created_at: string | null
+          date_precision: Database["public"]["Enums"]["date_precision"]
+          description: string | null
+          id: string
+          location: string | null
+          media_urls: string[] | null
+          memory_date: string
+          title: string
+          updated_at: string | null
+          user_id: string
+          visibility: Database["public"]["Enums"]["visibility_type"]
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["memory_category"]
+          created_at?: string | null
+          date_precision: Database["public"]["Enums"]["date_precision"]
+          description?: string | null
+          id?: string
+          location?: string | null
+          media_urls?: string[] | null
+          memory_date: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+          visibility?: Database["public"]["Enums"]["visibility_type"]
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["memory_category"]
+          created_at?: string | null
+          date_precision?: Database["public"]["Enums"]["date_precision"]
+          description?: string | null
+          id?: string
+          location?: string | null
+          media_urls?: string[] | null
+          memory_date?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["visibility_type"]
+        }
+        Relationships: []
+      }
       periods: {
         Row: {
           created_at: string | null
@@ -94,6 +139,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      date_precision: "today" | "complete" | "month_year" | "year_only"
+      memory_category:
+        | "travel"
+        | "education"
+        | "family"
+        | "work"
+        | "personal"
+        | "milestone"
+        | "other"
       period_type:
         | "residence"
         | "work"
@@ -230,6 +284,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      date_precision: ["today", "complete", "month_year", "year_only"],
+      memory_category: [
+        "travel",
+        "education",
+        "family",
+        "work",
+        "personal",
+        "milestone",
+        "other",
+      ],
       period_type: [
         "residence",
         "work",

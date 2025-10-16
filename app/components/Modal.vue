@@ -47,7 +47,7 @@ onClickOutside(modalContent, () => emit('close'));
   position: fixed;
   width: 100%;
   max-width: 28rem;
-  max-height: 90vh;
+  max-height: 95vh;
   padding: 1.5rem;
   overflow-y: auto;
   background-color: hsl(var(--background));
