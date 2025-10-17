@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      friendships: {
+        Row: {
+          created_at: string | null
+          id: string
+          receiver_id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["friendship_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          receiver_id: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          receiver_id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendships_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memories: {
         Row: {
           category: Database["public"]["Enums"]["memory_category"]
@@ -58,6 +100,44 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["visibility_type"]
         }
         Relationships: []
+      }
+      people: {
+        Row: {
+          creator_id: string
+          email: string | null
+          full_name: string
+          id: string
+          invited_at: string | null
+          registered_user_id: string | null
+          relationship: string | null
+        }
+        Insert: {
+          creator_id: string
+          email?: string | null
+          full_name: string
+          id?: string
+          invited_at?: string | null
+          registered_user_id?: string | null
+          relationship?: string | null
+        }
+        Update: {
+          creator_id?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          invited_at?: string | null
+          registered_user_id?: string | null
+          relationship?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_registered_user_id_fkey"
+            columns: ["registered_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       periods: {
         Row: {
@@ -131,6 +211,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_list_members: {
+        Row: {
+          list_id: string
+          member_id: string
+        }
+        Insert: {
+          list_id: string
+          member_id: string
+        }
+        Update: {
+          list_id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_list_members_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "user_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_list_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_lists: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -140,6 +271,7 @@ export type Database = {
     }
     Enums: {
       date_precision: "today" | "complete" | "month_year" | "year_only"
+      friendship_status: "pending" | "accepted" | "blocked"
       memory_category:
         | "travel"
         | "education"
@@ -285,6 +417,7 @@ export const Constants = {
   public: {
     Enums: {
       date_precision: ["today", "complete", "month_year", "year_only"],
+      friendship_status: ["pending", "accepted", "blocked"],
       memory_category: [
         "travel",
         "education",
