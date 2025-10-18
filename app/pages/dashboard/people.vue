@@ -14,10 +14,12 @@ const loading = ref(true);
 const profiles = ref<Profile[]>([]);
 const relationships = ref<Friendship[]>([]);
 
+const isModalOpen = ref(false);
+
 async function fetchData() {
   if (!user.value) return;
+
   loading.value = true;
-  
   const [profilesRes, relationshipsRes] = await Promise.all([
     client.from('profiles').select('*').neq('id', user.value.sub),
     client.from('friendships').select('*').or(`requester_id.eq.${user.value.sub},receiver_id.eq.${user.value.sub}`)
@@ -72,6 +74,10 @@ async function handleAction(userId: string, action: 'follow' | 'accept' | 'rejec
   
   await fetchData(); // Sempre recarrega os dados após uma ação
 }
+
+function handleSuccess() {
+  fetchData();
+}
 </script>
 
 <template>
@@ -81,7 +87,7 @@ async function handleAction(userId: string, action: 'follow' | 'accept' | 'rejec
         <h1>Pessoas</h1>
         <p>Gerencie as pessoas importantes da sua vida.</p>
       </div>
-      <button class="btn primary">
+      <button @click="isModalOpen = true" class="btn primary">
         <Icon name="lucide:plus" />
         Adicionar Pessoa
       </button>
@@ -100,6 +106,10 @@ async function handleAction(userId: string, action: 'follow' | 'accept' | 'rejec
       <FollowersList v-if="activeTab === 'followers'" :users="followers" />
       <UserLists v-if="activeTab === 'lists'"/>
     </div>
+
+    <Modal :is-open="isModalOpen" title="Adicionar Nova Pessoa" @close="isModalOpen = false">
+      <PersonForm @close="isModalOpen = false" @success="handleSuccess" />
+    </Modal>
   </div>
 </template>
 

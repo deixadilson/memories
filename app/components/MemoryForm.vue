@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
+import type { MemoryInsert, DatePrecision } from '~/types/app';
 
-type MemoryInsert = Database['public']['Tables']['memories']['Insert'];
 
 const emit = defineEmits(['close', 'success']);
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
 const loading = ref(false);
-const datePrecision = ref<Database['public']['Enums']['date_precision']>('complete');
+const datePrecision = ref<DatePrecision>('complete');
 const selectedFiles = ref<File[]>([]);
 
 const memoryData = ref({
@@ -45,7 +45,7 @@ function onFileChange(event: Event) {
 }
 
 async function createMemory() {
-  if (!user.value) return toast.error('Usuário não autenticado.');
+  if (!user.value) return;
   loading.value = true;
 
   let finalDate: string;

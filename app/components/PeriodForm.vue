@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-
-type PeriodInsert = Database['public']['Tables']['periods']['Insert'];
+import type { PeriodInsert } from '~/types/app';
 
 const emit = defineEmits(['close', 'success']);
 const client = useSupabaseClient<Database>();
@@ -36,10 +35,8 @@ const visibilityOptions = [
 ];
 
 async function createPeriod() {
-  if (!user.value) {
-    toast.error('Você precisa estar logado.');
-    return;
-  }
+  if (!user.value) return;
+
   loading.value = true;
   const { error } = await client.from('periods').insert({
     ...periodData.value,
