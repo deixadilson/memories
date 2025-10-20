@@ -121,6 +121,7 @@ button, .btn {
   font-size: .875rem;
   line-height: 1.25rem;
   font-weight: 500;
+  background-color: transparent;
   border-radius: calc(var(--radius) - 2px);
   transition-property: all;
   transition-timing-function: cubic-bezier(.4, 0, .2, 1);

@@ -1,20 +1,23 @@
 <script setup lang="ts">
+import type { Memory } from '~/types/app';
+
 const props = defineProps<{
   memory: {
     id: string;
     title: string;
-    description: string;
+    description: string | null;
     date: string;
-    category: 'travel' | 'education' | 'family' | 'work' | 'personal' | 'milestone';
+    date_precision?: string;
+    category: 'travel' | 'education' | 'family' | 'work' | 'personal' | 'milestone' | 'other';
     image?: string;
     mediaUrls?: string[];
-    location?: string;
+    location?: string | null;
     people?: string[];
   };
-  onEdit?: () => void;
+  isOwner?: boolean;
 }>();
 
-const displayMedia = props.memory.image ? [props.memory.image] : props.memory.mediaUrls;
+const emit = defineEmits(['edit', 'delete']);
 
 const categoryIcons = {
   travel: 'lucide:plane',
@@ -22,8 +25,35 @@ const categoryIcons = {
   family: 'lucide:heart',
   work: 'lucide:briefcase',
   personal: 'lucide:user',
-  milestone: 'lucide:award'
+  milestone: 'lucide:award',
+  other: 'lucide:shapes'
 };
+
+const formattedDate = computed(() => {
+  if (!props.memory.date) return 'Data não informada';
+  
+  const date = new Date(`${props.memory.date}T00:00:00`);
+
+  switch (props.memory.date_precision) {
+    case 'complete':
+    case 'today':
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      });
+    case 'month_year':
+      return date.toLocaleDateString('pt-BR', {
+        month: 'long', year: 'numeric'
+      });
+    case 'year_only':
+      return date.toLocaleDateString('pt-BR', {
+        year: 'numeric'
+      });
+    default:
+      return props.memory.date;
+  }
+});
+
+const displayMedia = props.memory.image ? [props.memory.image] : props.memory.mediaUrls;
 </script>
 
 <template>
@@ -43,27 +73,30 @@ const categoryIcons = {
       <div class="card-header">
         <div class="title">
           <h3>{{memory.title}}</h3>
-          <p>{{memory.date}}</p>
+          <p>{{ formattedDate }}</p>
         </div>
         <div class="aside">
           <div :class="`badge ${memory.category}`">
-            <Icon :name="categoryIcons[memory.category]" class="icon"/>
-            {{memory.category}}
+            <Icon :name="categoryIcons[memory.category]"/>
+            {{ memory.category }}
           </div>
-          <button v-if="onEdit" @click="onEdit">
-            <Icon name="lucide:pen" />
+          <button v-if="isOwner" @click="emit('edit')" class="action-btn" title="Editar">
+            <Icon name="lucide:pencil" />
+          </button>
+          <button v-if="isOwner" @click="emit('delete')" class="action-btn" title="Excluir">
+            <Icon name="lucide:trash-2" />
           </button>
         </div>
       </div>
-      <p class="description">{{memory.description}}</p>
+      <p class="description">{{ memory.description }}</p>
       <div v-if="memory.location || memory.people" class="card-footer">
         <div v-if="memory.location" class="location">
           <Icon name="lucide:map-pin" class="icon" alt="Location" />
-          {{memory.location}}
+          {{ memory.location }}
         </div>
         <div v-if="memory.people && memory.people.length > 0" class="people">
           <Icon name="lucide:user" class="icon" alt="People"/>
-          {{memory.people.join(', ')}}
+          {{ memory.people.join(', ') }}
         </div>
       </div>
     </div>
@@ -146,10 +179,18 @@ img.icon {
   width: .75rem;
   height: .75rem;
 }
-.aside button {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
+.action-btn {
+  width: 2rem; height: 2rem;
+  padding: 0.25rem;
+}
+.action-btn:last-child {
+  color: hsl(var(--destructive));
+}
+.action-btn:hover {
+  background-color: hsl(var(--accent));
+}
+.action-btn .iconify {
+  width: 1rem; height: 1rem;
 }
 .description {
   color: hsl(var(--foreground) / .8);
@@ -171,5 +212,9 @@ img.icon {
   color: hsl(var(--muted-foreground));
   font-size: .875rem;
   line-height: 1.25rem;
+}
+.location .iconify {
+  width: 1rem; height: 1rem;
+  color: hsl(var(--gold));
 }
 </style>

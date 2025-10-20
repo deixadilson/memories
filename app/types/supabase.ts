@@ -60,12 +60,12 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["memory_category"]
           created_at: string | null
+          date: string
           date_precision: Database["public"]["Enums"]["date_precision"]
           description: string | null
           id: string
           location: string | null
           media_urls: string[] | null
-          memory_date: string
           title: string
           updated_at: string | null
           user_id: string
@@ -74,12 +74,12 @@ export type Database = {
         Insert: {
           category: Database["public"]["Enums"]["memory_category"]
           created_at?: string | null
+          date: string
           date_precision: Database["public"]["Enums"]["date_precision"]
           description?: string | null
           id?: string
           location?: string | null
           media_urls?: string[] | null
-          memory_date: string
           title: string
           updated_at?: string | null
           user_id: string
@@ -88,12 +88,12 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["memory_category"]
           created_at?: string | null
+          date?: string
           date_precision?: Database["public"]["Enums"]["date_precision"]
           description?: string | null
           id?: string
           location?: string | null
           media_urls?: string[] | null
-          memory_date?: string
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -244,18 +244,21 @@ export type Database = {
       user_lists: {
         Row: {
           created_at: string | null
+          description: string | null
           id: string
           name: string
           owner_id: string
         }
         Insert: {
           created_at?: string | null
+          description?: string | null
           id?: string
           name: string
           owner_id: string
         }
         Update: {
           created_at?: string | null
+          description?: string | null
           id?: string
           name?: string
           owner_id?: string

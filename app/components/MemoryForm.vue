@@ -92,9 +92,9 @@ async function createMemory() {
 
   const { error } = await client.from('memories').insert({
     id: newMemoryId,
-    user_id: user.value.id,
+    user_id: user.value.sub,
     ...memoryData.value,
-    memory_date: finalDate,
+    date: finalDate,
     date_precision: datePrecision.value,
     media_urls: mediaUrls.length > 0 ? mediaUrls : null,
   } as MemoryInsert);

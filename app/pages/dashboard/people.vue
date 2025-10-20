@@ -96,6 +96,7 @@ function handleSuccess() {
       <button @click="activeTab = 'users'" :class="{ active: activeTab === 'users' }" class="tab-item">Usuários</button>
       <button @click="activeTab = 'following'" :class="{ active: activeTab === 'following' }" class="tab-item">Seguindo</button>
       <button @click="activeTab = 'followers'" :class="{ active: activeTab === 'followers' }" class="tab-item">Seguidores</button>
+      <button class="tab-item">Pessoas</button>
       <button @click="activeTab = 'lists'" :class="{ active: activeTab === 'lists' }" class="tab-item">Listas</button>
     </div>
 
@@ -116,7 +117,7 @@ function handleSuccess() {
 <style scoped>
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   width: 100%; height: 2.5rem;
   max-width: 38rem;
   color: hsl(var(--muted-foreground));
