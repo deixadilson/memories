@@ -11,6 +11,7 @@ const user = useSupabaseUser();
 const isModalOpen = ref(false);
 const loading = ref(true);
 const periods = ref<Period[]>([]);
+const editingPeriod = ref<Period | null>(null);
 
 async function fetchPeriods() {
   if (!user.value) return;
@@ -40,6 +41,16 @@ async function deletePeriod(periodId: string) {
   }
 }
 
+function editPeriod(period: Period) {
+  editingPeriod.value = period;
+  isModalOpen.value = true;
+}
+
+function closeModal() {
+  isModalOpen.value = false;
+  editingPeriod.value = null;
+}
+
 function handleSuccess() {
   fetchPeriods();
 }
@@ -66,6 +77,7 @@ onMounted(fetchPeriods);
       :key="period.id"
       :period="period"
       :is-owner="true"
+      @edit="editPeriod(period)"
       @delete="deletePeriod(period.id)"
     />
   </div>
@@ -82,10 +94,10 @@ onMounted(fetchPeriods);
 
   <Modal
     :is-open="isModalOpen"
-    title="Criar Novo Período"
-    @close="isModalOpen = false"
+    :title="editingPeriod ? 'Editar Período' : 'Criar Novo Período'"
+    @close="closeModal"
   >
-    <PeriodForm @close="isModalOpen = false" @success="handleSuccess" />
+    <PeriodForm :initial-data="editingPeriod" @close="closeModal" @success="handleSuccess" />
   </Modal>
 </template>
 

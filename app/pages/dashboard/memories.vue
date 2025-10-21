@@ -11,6 +11,7 @@ const user = useSupabaseUser();
 const isModalOpen = ref(false);
 const loading = ref(true);
 const memories = ref<Memory[]>([]);
+const editingMemory = ref<Memory | null>(null);
 
 async function fetchMemories() {
   if (!user.value) return;
@@ -28,6 +29,11 @@ async function fetchMemories() {
   loading.value = false;
 }
 
+function editMemory(memory: Memory) {
+  editingMemory.value = memory;
+  isModalOpen.value = true;
+}
+
 async function deleteMemory(memoryId: string) {
   if (confirm('Tem certeza que deseja excluir esta memória?')) {
     const { error } = await client.from('memories').delete().eq('id', memoryId);
@@ -38,6 +44,11 @@ async function deleteMemory(memoryId: string) {
       fetchMemories();
     }
   }
+}
+
+function closeModal() {
+  isModalOpen.value = false;
+  editingMemory.value = null;
 }
 
 function handleSuccess() {
@@ -67,6 +78,7 @@ onMounted(fetchMemories);
         :key="memory.id"
         :memory="memory"
         :is-owner="true"
+        @edit="editMemory(memory)"
         @delete="deleteMemory(memory.id)"
       />
     </div>
@@ -83,10 +95,10 @@ onMounted(fetchMemories);
 
     <Modal
       :is-open="isModalOpen"
-      title="Criar Nova Memória"
-      @close="isModalOpen = false"
+      :title="editingMemory ? 'Editar Memória' : 'Criar Nova Memória'"
+      @close="closeModal"
     >
-      <MemoryForm @close="isModalOpen = false" @success="handleSuccess" />
+      <MemoryForm :initial-data="editingMemory" @close="closeModal" @success="handleSuccess" />
     </Modal>
   </div>
 </template>

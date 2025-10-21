@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { MemoryInsert, DatePrecision } from '~/types/app';
+import type { Memory, MemoryInsert, DatePrecision, MemoryFormData } from '~/types/app';
 
-
+const props = defineProps<{ initialData?: Memory | null }>();
 const emit = defineEmits(['close', 'success']);
+
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
@@ -12,7 +13,7 @@ const loading = ref(false);
 const datePrecision = ref<DatePrecision>('complete');
 const selectedFiles = ref<File[]>([]);
 
-const memoryData = ref({
+const memoryData = ref<MemoryFormData>({
   title: '',
   category: 'personal',
   location: '',
@@ -37,6 +38,29 @@ const visibilityOptions = [
   { id: 'public', label: 'Público', icon: 'lucide:globe' },
 ];
 
+watchEffect(() => {
+  if (props.initialData) {
+    const data = props.initialData;
+    memoryData.value = {
+      title: data.title,
+      category: data.category,
+      location: data.location || '',
+      description: data.description || '',
+      visibility: data.visibility,
+    };
+    datePrecision.value = data.date_precision;
+    
+    const date = new Date(`${data.date}T00:00:00`);
+    if (datePrecision.value === 'complete') {
+      dateParts.value.complete = data.date;
+    }
+    dateParts.value.year = date.getFullYear().toString();
+    dateParts.value.month = date.getMonth().toString();
+  }
+});
+
+const isEditMode = computed(() => !!props.initialData);
+
 function onFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target.files) {
@@ -44,10 +68,10 @@ function onFileChange(event: Event) {
   }
 }
 
-async function createMemory() {
+async function handleSubmit() {
   if (!user.value) return;
-  loading.value = true;
 
+  loading.value = true;
   let finalDate: string;
   switch (datePrecision.value) {
     case 'today':
@@ -90,21 +114,42 @@ async function createMemory() {
     mediaUrls = results.map(res => client.storage.from('memories-media').getPublicUrl(res.data!.path).data.publicUrl);
   }
 
-  const { error } = await client.from('memories').insert({
-    id: newMemoryId,
-    user_id: user.value.sub,
+  const dataToSubmit: Omit<MemoryInsert, 'user_id' | 'id'> = {
     ...memoryData.value,
     date: finalDate,
     date_precision: datePrecision.value,
-    media_urls: mediaUrls.length > 0 ? mediaUrls : null,
-  } as MemoryInsert);
+    updated_at: new Date().toISOString(),
+  };
 
-  if (error) {
-    toast.error(error.message);
+  if (isEditMode.value) {
+    const { error } = await client
+      .from('memories')
+      .update(dataToSubmit)
+      .eq('id', props.initialData!.id);
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(isEditMode.value ? '' : 'Memória atualizada com sucesso!');
+      emit('success');
+      emit('close');
+    }
   } else {
-    toast.success('Memória criada com sucesso!');
-    emit('success');
-    emit('close');
+    const { error } = await client.from('memories').insert({
+      id: newMemoryId,
+      user_id: user.value.sub,
+      ...memoryData.value,
+      date: finalDate,
+      date_precision: datePrecision.value,
+      media_urls: mediaUrls.length > 0 ? mediaUrls : null,
+    } as MemoryInsert);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(isEditMode.value ? '' : 'Memória criada com sucesso!');
+      emit('success');
+      emit('close');
+    }
   }
 
   loading.value = false;
@@ -112,7 +157,7 @@ async function createMemory() {
 </script>
 
 <template>
-  <form @submit.prevent="createMemory">
+  <form @submit.prevent="handleSubmit">
     <div class="form-group">
       <label for="title">Título *</label>
       <input id="title" v-model="memoryData.title" type="text" placeholder="Ex: Formatura" required />
@@ -203,7 +248,7 @@ async function createMemory() {
     </div>
     <button class="btn primary" type="submit" :disabled="loading">
       <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
-      {{ loading ? 'Criando...' : 'Criar Memória' }}
+      {{ loading ? (isEditMode ? 'Salvando...' : 'Criando...') : (isEditMode ? 'Salvar Alterações' : 'Criar Memória') }}
     </button>
   </form>
 </template>

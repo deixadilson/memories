@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { PeriodInsert } from '~/types/app';
+import type { Period, PeriodInsert, PeriodFormData } from '~/types/app';
 
+const props = defineProps<{ initialData?: Period | null }>();
 const emit = defineEmits(['close', 'success']);
+
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
 const loading = ref(false);
-const periodData = ref({
+const periodData = ref<PeriodFormData>({
   title: '',
   type: 'residence',
   start_date: '',
@@ -34,29 +36,65 @@ const visibilityOptions = [
   { id: 'public', label: 'Público', icon: 'lucide:globe' },
 ];
 
-async function createPeriod() {
+watchEffect(() => {
+  if (props.initialData) {
+    periodData.value = {
+      title: props.initialData.title,
+      type: props.initialData.type,
+      start_date: props.initialData.start_date,
+      end_date: props.initialData.end_date || '',
+      location: props.initialData.location || '',
+      description: props.initialData.description || '',
+      visibility: props.initialData.visibility,
+    };
+  }
+});
+
+const isEditMode = computed(() => !!props.initialData);
+
+async function handleSubmit() {
   if (!user.value) return;
 
   loading.value = true;
-  const { error } = await client.from('periods').insert({
+  const dataToSubmit: Omit<PeriodInsert, 'user_id'> = {
     ...periodData.value,
-    user_id: user.value.sub,
     end_date: periodData.value.end_date || null,
-  } as PeriodInsert);
+    updated_at: new Date().toISOString(),
+  };
 
-  if (error) {
-    toast.error(error.message);
+  if (isEditMode.value) {
+    const { error } = await client
+      .from('periods')
+      .update(dataToSubmit)
+      .eq('id', props.initialData!.id);
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Período atualizado com sucesso!');
+      emit('success');
+      emit('close');
+    }
   } else {
-    toast.success('Período criado com sucesso!');
-    emit('success');
-    emit('close');
+    const { error } = await client.from('periods').insert({
+      ...dataToSubmit,
+      user_id: user.value.sub,
+    } as PeriodInsert);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Período criado com sucesso!');
+      emit('success');
+      emit('close');
+    }
   }
   loading.value = false;
 }
 </script>
 
 <template>
-  <form @submit.prevent="createPeriod">
+  <form @submit.prevent="handleSubmit">
     <div>
       <label for="title">Título *</label>
       <input id="title" v-model="periodData.title" type="text" placeholder="Ex. Morei em Campinas" required/>
@@ -98,7 +136,7 @@ async function createPeriod() {
     </div>
     <button class="btn primary" type="submit" :disabled="loading">
       <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
-      {{ loading ? 'Criando...' : 'Criar Período' }}
+      {{ loading ? (isEditMode ? 'Salvando...' : 'Criando...') : (isEditMode ? 'Salvar Alterações' : 'Criar Período') }}
     </button>
   </form>
 </template>
