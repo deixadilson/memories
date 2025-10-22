@@ -8,10 +8,12 @@ definePageMeta({ layout: 'dashboard' });
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
-const isModalOpen = ref(false);
 const loading = ref(true);
+const isModalOpen = ref(false);
+const isConfirmModalOpen = ref(false);
 const periods = ref<Period[]>([]);
 const editingPeriod = ref<Period | null>(null);
+const periodToDelete = ref<Period | null>(null);
 
 async function fetchPeriods() {
   if (!user.value) return;
@@ -29,26 +31,37 @@ async function fetchPeriods() {
   loading.value = false;
 }
 
-async function deletePeriod(periodId: string) {
-  if (confirm('Tem certeza que deseja excluir este período? Esta ação não pode ser desfeita.')) {
-    const { error } = await client.from('periods').delete().eq('id', periodId);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Período excluído com sucesso.');
-      fetchPeriods();
-    }
-  }
-}
-
 function editPeriod(period: Period) {
   editingPeriod.value = period;
   isModalOpen.value = true;
 }
 
+function promptDeletePeriod(period: Period) {
+  periodToDelete.value = period;
+  isConfirmModalOpen.value = true;
+}
+
+async function deletePeriod(period: Period) {
+  if (!periodToDelete.value) return;
+  const { error } = await client.from('periods').delete().eq('id', periodToDelete.value.id);
+  
+  if (error) {
+    toast.error(error.message);
+  } else {
+    toast.success('Período excluído com sucesso.');
+    fetchPeriods();
+  }
+  closeConfirmModal();
+}
+
 function closeModal() {
   isModalOpen.value = false;
   editingPeriod.value = null;
+}
+
+function closeConfirmModal() {
+  isConfirmModalOpen.value = false;
+  periodToDelete.value = null;
 }
 
 function handleSuccess() {
@@ -78,7 +91,7 @@ onMounted(fetchPeriods);
       :period="period"
       :is-owner="true"
       @edit="editPeriod(period)"
-      @delete="deletePeriod(period.id)"
+      @delete="promptDeletePeriod(period)"
     />
   </div>
   <EmptyState v-else
@@ -99,6 +112,14 @@ onMounted(fetchPeriods);
   >
     <PeriodForm :initial-data="editingPeriod" @close="closeModal" @success="handleSuccess" />
   </Modal>
+
+  <ConfirmModal
+    :is-open="isConfirmModalOpen"
+    title="Confirmar exclusão"
+    message="Tem certeza que deseja excluir este período? Esta ação não pode ser desfeita."
+    @cancel="closeConfirmModal"
+    @confirm="deletePeriod"
+  />
 </template>
 
 <style scoped>

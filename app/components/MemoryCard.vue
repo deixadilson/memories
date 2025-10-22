@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Memory } from '~/types/app';
 
 const props = defineProps<{
   memory: {
@@ -10,7 +9,7 @@ const props = defineProps<{
     date_precision?: string;
     category: 'travel' | 'education' | 'family' | 'work' | 'personal' | 'milestone' | 'other';
     image?: string;
-    mediaUrls?: string[];
+    media_urls?: string[] | null;
     location?: string | null;
     people?: string[];
   };
@@ -38,7 +37,7 @@ const formattedDate = computed(() => {
     case 'complete':
     case 'today':
       return date.toLocaleDateString('pt-BR', {
-        day: '2-digit', month: 'long', year: 'numeric'
+        day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC'
       });
     case 'month_year':
       return date.toLocaleDateString('pt-BR', {
@@ -53,7 +52,7 @@ const formattedDate = computed(() => {
   }
 });
 
-const displayMedia = props.memory.image ? [props.memory.image] : props.memory.mediaUrls;
+const displayMedia = props.memory.image ? [props.memory.image] : props.memory.media_urls;
 </script>
 
 <template>
@@ -107,6 +106,7 @@ const displayMedia = props.memory.image ? [props.memory.image] : props.memory.me
 .card {
   color: hsl(var(--card-foreground));
   padding: 1.5rem;
+  height: min-content;
 }
 .media {
   margin-bottom: 1rem;

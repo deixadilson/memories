@@ -18,7 +18,7 @@ const periodIcons = {
 };
 
 const formattedDate = computed(() => {
-  const options: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric' };
+  const options: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric', timeZone: 'UTC' };
   const startDate = new Date(props.period.start_date).toLocaleDateString('pt-BR', options);
   const endDate = props.period.end_date
     ? new Date(props.period.end_date).toLocaleDateString('pt-BR', options)

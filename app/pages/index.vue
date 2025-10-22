@@ -230,6 +230,7 @@ h1 span {
   backdrop-filter: blur(4px);
 }
 .secondary {
+  color: #fff;
   border: #ffffff4d 2px solid;
   background-color: #ffffff1a;
 }

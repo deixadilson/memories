@@ -99,7 +99,9 @@ async function handleSubmit() {
 
   if (selectedFiles.value.length > 0) {
     const uploadPromises = selectedFiles.value.map(file => {
-      const filePath = `${user.value!.id}/${newMemoryId}/${file.name}`;
+      const fileExt = file.name.split('.').pop();
+      const uniqueFileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.value!.sub}/${newMemoryId}/${uniqueFileName}`;
       return client.storage.from('memories-media').upload(filePath, file);
     });
 

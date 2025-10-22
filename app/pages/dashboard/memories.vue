@@ -8,10 +8,12 @@ definePageMeta({ layout: 'dashboard' });
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
-const isModalOpen = ref(false);
 const loading = ref(true);
+const isModalOpen = ref(false);
+const isConfirmModalOpen = ref(false);
 const memories = ref<Memory[]>([]);
 const editingMemory = ref<Memory | null>(null);
+const memoryToDelete = ref<Memory | null>(null);
 
 async function fetchMemories() {
   if (!user.value) return;
@@ -34,21 +36,32 @@ function editMemory(memory: Memory) {
   isModalOpen.value = true;
 }
 
-async function deleteMemory(memoryId: string) {
-  if (confirm('Tem certeza que deseja excluir esta memória?')) {
-    const { error } = await client.from('memories').delete().eq('id', memoryId);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Memória excluída com sucesso.');
-      fetchMemories();
-    }
+function promptDeletePeriod(memory: Memory) {
+  memoryToDelete.value = memory;
+  isConfirmModalOpen.value = true;
+}
+
+async function deleteMemory(memory: Memory) {
+  if (!memoryToDelete.value) return;
+  const { error } = await client.from('memories').delete().eq('id', memoryToDelete.value.id);
+  
+  if (error) {
+    toast.error(error.message);
+  } else {
+    toast.success('Memória excluída com sucesso.');
+    fetchMemories();
   }
+  closeConfirmModal();
 }
 
 function closeModal() {
   isModalOpen.value = false;
   editingMemory.value = null;
+}
+
+function closeConfirmModal() {
+  isConfirmModalOpen.value = false;
+  memoryToDelete.value = null;
 }
 
 function handleSuccess() {
@@ -79,7 +92,7 @@ onMounted(fetchMemories);
         :memory="memory"
         :is-owner="true"
         @edit="editMemory(memory)"
-        @delete="deleteMemory(memory.id)"
+        @delete="promptDeletePeriod(memory)"
       />
     </div>
     <EmptyState v-else
@@ -100,6 +113,14 @@ onMounted(fetchMemories);
     >
       <MemoryForm :initial-data="editingMemory" @close="closeModal" @success="handleSuccess" />
     </Modal>
+
+    <ConfirmModal
+      :is-open="isConfirmModalOpen"
+      title="Confirmar exclusão"
+      message="Tem certeza que deseja excluir esta memória? Esta ação não pode ser desfeita."
+      @cancel="closeConfirmModal"
+      @confirm="deleteMemory"
+    />
   </div>
 </template>
 
