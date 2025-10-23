@@ -61,7 +61,6 @@ const formattedDate = computed(() => {
 <style scoped>
 .card {
   padding: 1.5rem;
-  cursor: pointer;
   box-shadow: var(--shadow-soft);
 }
 .card-header {

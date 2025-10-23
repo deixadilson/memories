@@ -85,14 +85,19 @@ onMounted(fetchPeriods);
 
   <div v-if="loading" class="loading-state"><Icon name="lucide:loader-circle" class="spinner"/> Carregando...</div>
   <div v-else-if="periods.length > 0" class="periods-grid">
-    <PeriodCard
+    <NuxtLink
       v-for="period in periods"
       :key="period.id"
-      :period="period"
-      :is-owner="true"
-      @edit="editPeriod(period)"
-      @delete="promptDeletePeriod(period)"
-    />
+      :to="`/dashboard/periods/${period.id}`"
+      class="period-link"
+    >
+      <PeriodCard
+        :period="period"
+        :is-owner="true"
+        @edit="editPeriod(period)"
+        @delete="promptDeletePeriod(period)"
+      />
+    </NuxtLink>
   </div>
   <EmptyState v-else
     icon="lucide:calendar"
@@ -129,6 +134,10 @@ onMounted(fetchPeriods);
   margin-top: 2rem;
 }
 .loading-state { text-align: center; padding: 2rem; color: hsl(var(--muted-foreground)); }
+
+.period-link {
+  display: contents;
+}
 
 @media (min-width: 768px) {
   .periods-grid {
