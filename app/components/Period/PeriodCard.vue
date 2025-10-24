@@ -40,10 +40,10 @@ const formattedDate = computed(() => {
         </div>
       </div>
       <div v-if="isOwner" class="actions">
-        <button @click="emit('edit')" class="action-btn" title="Editar">
+        <button @click.stop="emit('edit')" class="action-btn" title="Editar">
           <Icon name="lucide:pencil" />
         </button>
-        <button @click="emit('delete')" class="action-btn" title="Excluir">
+        <button @click.stop="emit('delete')" class="action-btn" title="Excluir">
           <Icon name="lucide:trash-2" />
         </button>
       </div>

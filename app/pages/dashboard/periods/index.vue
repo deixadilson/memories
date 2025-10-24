@@ -7,6 +7,7 @@ definePageMeta({ layout: 'dashboard' });
 
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
+const router = useRouter();
 
 const loading = ref(true);
 const isModalOpen = ref(false);
@@ -54,6 +55,10 @@ async function deletePeriod(period: Period) {
   closeConfirmModal();
 }
 
+function navigateToPeriod(id: string) {
+  router.push(`/dashboard/periods/${id}`);
+}
+
 function closeModal() {
   isModalOpen.value = false;
   editingPeriod.value = null;
@@ -85,10 +90,10 @@ onMounted(fetchPeriods);
 
   <div v-if="loading" class="loading-state"><Icon name="lucide:loader-circle" class="spinner"/> Carregando...</div>
   <div v-else-if="periods.length > 0" class="periods-grid">
-    <NuxtLink
+    <div
       v-for="period in periods"
       :key="period.id"
-      :to="`/dashboard/periods/${period.id}`"
+      @click="navigateToPeriod(period.id)"
       class="period-link"
     >
       <PeriodCard
@@ -97,7 +102,7 @@ onMounted(fetchPeriods);
         @edit="editPeriod(period)"
         @delete="promptDeletePeriod(period)"
       />
-    </NuxtLink>
+    </div>
   </div>
   <EmptyState v-else
     icon="lucide:calendar"
@@ -137,6 +142,7 @@ onMounted(fetchPeriods);
 
 .period-link {
   display: contents;
+  cursor: pointer;
 }
 
 @media (min-width: 768px) {

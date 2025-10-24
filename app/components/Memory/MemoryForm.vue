@@ -132,7 +132,7 @@ async function handleSubmit() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(isEditMode.value ? '' : 'Memória atualizada com sucesso!');
+      toast.success('Memória atualizada com sucesso!');
       emit('success');
       emit('close');
     }
@@ -148,7 +148,7 @@ async function handleSubmit() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(isEditMode.value ? '' : 'Memória criada com sucesso!');
+      toast.success('Memória criada com sucesso!');
       emit('success');
       emit('close');
     }
@@ -227,12 +227,12 @@ async function handleSubmit() {
     </div>
 
     <div class="form-group">
-      <label for="media">Mídias (imagens/vídeos)</label>
+      <label for="media">Mídias</label>
       <label for="media" class="file-input-label">
         <Icon name="lucide:upload" />
         <span>Selecionar arquivos</span>
       </label>
-      <input id="media" type="file" multiple @change="onFileChange" class="hidden" />
+      <input id="media" type="file" accept="image/*" multiple @change="onFileChange" class="hidden" />
       <div v-if="selectedFiles.length > 0" class="file-preview">
         <span v-for="file in selectedFiles" :key="file.name">{{ file.name }}</span>
       </div>

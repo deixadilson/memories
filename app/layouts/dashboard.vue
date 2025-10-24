@@ -1,3 +1,12 @@
+<script setup lang="ts">
+const navLinks = [
+  { to: '/dashboard', icon: 'lucide:home', label: 'Dashboard' },
+  { to: '/dashboard/periods', icon: 'lucide:clock', label: 'Períodos' },
+  { to: '/dashboard/memories', icon: 'lucide:image', label: 'Memórias' },
+  { to: '/dashboard/people', icon: 'lucide:users', label: 'Pessoas' },
+];
+</script>
+
 <template>
   <div class="dashboard-layout">
     <header class="header">
@@ -6,21 +15,9 @@
           Memórias
         </NuxtLink>
         <nav>
-          <NuxtLink to="/dashboard" class="nav-link">
-            <Icon name="lucide:house" />
-            <span>Dashboard</span>
-          </NuxtLink>
-          <NuxtLink to="/dashboard/periods" class="nav-link">
-            <Icon name="lucide:clock" />
-            <span>Períodos</span>
-          </NuxtLink>
-          <NuxtLink to="/dashboard/memories" class="nav-link">
-            <Icon name="lucide:image" />
-            <span>Memórias</span>
-          </NuxtLink>
-          <NuxtLink to="/dashboard/people" class="nav-link">
-            <Icon name="lucide:users" />
-            <span>Pessoas</span>
+          <NuxtLink v-for="link in navLinks" :key="link.to" :to="link.to" class="nav-link">
+            <Icon :name="link.icon" class="icon" />
+            <span class="label">{{ link.label }}</span>
           </NuxtLink>
         </nav>
         <UserDropdown />
@@ -29,6 +26,12 @@
     <main class="main-content container">
       <slot />
     </main>
+    <nav class="mobile-nav">
+      <NuxtLink v-for="link in navLinks" :key="link.to" :to="link.to" class="nav-link">
+        <Icon :name="link.icon" class="icon" />
+        <span class="label">{{ link.label }}</span>
+      </NuxtLink>
+    </nav>
   </div>
 </template>
 
@@ -73,9 +76,6 @@ nav {
 .nav-link:not(:first-child) {
   margin-left: 1.5rem;
 }
-.nav-link:hover {
-  color: hsl(var(--gold));
-}
 .nav-link span {
   margin-left: .5rem;
 }
@@ -83,6 +83,44 @@ nav {
   margin: 0 auto;
   padding: 2rem 1rem;
 }
+
+
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4rem;
+  background-color: hsl(var(--card));
+  border-top: 1px solid hsl(var(--border));
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+}
+.mobile-nav .nav-link {
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+  text-decoration: none;
+  color: hsl(var(--muted-foreground));
+}
+.mobile-nav .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-bottom: .25rem;
+}
+.mobile-nav .label {
+  font-size: .65rem;
+  font-weight: 500;
+}
+.mobile-nav .router-link-exact-active {
+  color: hsl(var(--gold));
+}
+.nav-link:hover {
+  color: hsl(var(--gold));
+}
+
+
 .main-content :deep(.page-header) {
   display: flex;
   justify-content: space-between;
@@ -108,6 +146,15 @@ nav {
 @media (min-width: 768px) {
   nav {
     display: flex;
+  }
+}
+@media (max-width: 767px) {
+  .desktop-nav {
+    display: none;
+  }
+  .mobile-nav {
+    display: flex;
+    justify-content: space-around;
   }
 }
 </style>

@@ -75,7 +75,7 @@ onMounted(fetchData);
       </div>
     </section>
 
-    <section class="stats-grid">
+    <section class="stats-grid desktop-only">
       <div class="stat-card">
         <div class="stats-header">
           <h3>Memórias</h3>
@@ -102,6 +102,36 @@ onMounted(fetchData);
         <div class="stat-content">
           <span class="count">{{ counts.people }}</span>
         </div>
+      </div>
+    </section>
+
+    <section class="mobile-stats-card mobile-only">
+      <div class="stat-item">
+        <div class="label">
+          <span>Memórias</span>
+        </div>
+        <span class="count">
+          {{ counts.memories }}
+          <Icon name="lucide:image" class="stat-icon"/>
+        </span>
+      </div>
+      <div class="stat-item">
+        <div class="label">
+          <span>Períodos</span>
+        </div>
+        <span class="count">
+          {{ counts.periods }}
+          <Icon name="lucide:clock" class="stat-icon"/>
+        </span>
+      </div>
+      <div class="stat-item">
+        <div class="label">
+          <span>Pessoas</span>
+        </div>
+        <span class="count">
+          {{ counts.people }}
+          <Icon name="lucide:users" class="stat-icon"/>
+        </span>
       </div>
     </section>
 
@@ -148,6 +178,12 @@ onMounted(fetchData);
 </template>
 
 <style scoped>
+.mobile-only {
+  display: none;
+}
+.desktop-only {
+  display: grid;
+}
 .stats-grid {
   display: grid;
   gap: 1rem;
@@ -190,6 +226,32 @@ h3 {
   line-height: 2.25rem;
   font-weight: 700;
 }
+.mobile-stats-card {
+  background-color: hsl(var(--card));
+  border-radius: var(--radius);
+  padding: 1rem;
+  justify-content: space-around;
+  text-align: center;
+  margin-bottom: 2rem;
+  border: 1px solid hsl(var(--border));
+}
+.stat-item .count {
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.stat-item .label {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+.stat-item .iconify {
+  color: hsl(var(--pink-light));
+}
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -208,6 +270,14 @@ h2 {
   gap: 1.5rem;
 }
 
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none;
+  }
+  .mobile-only {
+    display: flex;
+  }
+}
 @media (min-width: 768px) {
   .stats-grid { grid-template-columns: repeat(3, 1fr); }
   .memories-grid { grid-template-columns: repeat(2, 1fr); }

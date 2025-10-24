@@ -79,10 +79,10 @@ const displayMedia = props.memory.image ? [props.memory.image] : props.memory.me
             <Icon :name="categoryIcons[memory.category]"/>
             {{ memory.category }}
           </div>
-          <button v-if="isOwner" @click="emit('edit')" class="action-btn" title="Editar">
+          <button v-if="isOwner" @click.stop="emit('edit')" class="action-btn" title="Editar">
             <Icon name="lucide:pencil" />
           </button>
-          <button v-if="isOwner" @click="emit('delete')" class="action-btn" title="Excluir">
+          <button v-if="isOwner" @click.stop="emit('delete')" class="action-btn" title="Excluir">
             <Icon name="lucide:trash-2" />
           </button>
         </div>
