@@ -18,7 +18,7 @@ async function createPerson() {
 
   loading.value = true;
   const { error: insertError } = await client.from('people').insert({
-    creator_id: user.value.id,
+    creator_id: user.value.sub,
     full_name: personData.value.full_name,
     email: personData.value.email || null,
     relationship: personData.value.relationship || null,

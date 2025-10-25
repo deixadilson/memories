@@ -67,12 +67,13 @@ async function handleAction(userId: string, action: 'follow' | 'accept' | 'rejec
   if (!user.value) return;
 
   if (action === 'follow') {
-    const { error } = await client.from('friendships').insert({ requester_id: user.value.id, receiver_id: userId });
+    const { error } = await client
+      .from('friendships')
+      .insert({ requester_id: user.value.sub, receiver_id: userId });
+    
     if (error) toast.error(error.message); else toast.success('Solicitação enviada!');
-  }
-  // Adicionar lógica para 'accept', 'reject' e 'block' aqui depois
-  
-  await fetchData(); // Sempre recarrega os dados após uma ação
+  }  
+  await fetchData();
 }
 
 function handleSuccess() {

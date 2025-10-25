@@ -43,7 +43,7 @@ function handleAction(userId: string, action: any) {
 .search-icon {
   position: absolute;
   top: 50%;
-  left: 0.75rem;
+  left: .75rem;
   transform: translateY(-50%);
   color: hsl(var(--muted-foreground));
 }
@@ -55,6 +55,9 @@ function handleAction(userId: string, action: any) {
 .user-list {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: .25rem;
+  padding: .25rem;
+  background-color: hsl(var(--muted));
+  border-radius: var(--radius);
 }
 </style>

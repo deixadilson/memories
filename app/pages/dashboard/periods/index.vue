@@ -138,8 +138,6 @@ onMounted(fetchPeriods);
   gap: 1.5rem;
   margin-top: 2rem;
 }
-.loading-state { text-align: center; padding: 2rem; color: hsl(var(--muted-foreground)); }
-
 .period-link {
   display: contents;
   cursor: pointer;

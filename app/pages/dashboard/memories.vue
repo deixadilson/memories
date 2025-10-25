@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Memory, MemoryWithAuthor, CommentWithProfile, SelectedMemory } from '~/types/app';
+import type { Memory, MemoryWithAuthor } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
+
+const { open: openMemoryModal } = useMemoryModal();
 
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
@@ -14,10 +16,6 @@ const isConfirmModalOpen = ref(false);
 const memories = ref<MemoryWithAuthor[]>([]);
 const editingMemory = ref<Memory | null>(null);
 const memoryToDelete = ref<Memory | null>(null);
-
-const isDetailModalOpen = ref(false);
-const selectedMemoryIndex = ref(-1);
-const selectedMemoryData = ref<SelectedMemory>({ memory: null, likes: [], comments: [] });
 
 async function fetchMemories() {
   if (!user.value) return;
@@ -41,7 +39,7 @@ function editMemory(memory: Memory) {
   isModalOpen.value = true;
 }
 
-function promptDeletePeriod(memory: Memory) {
+function promptDeleteMemory(memory: Memory) {
   memoryToDelete.value = memory;
   isConfirmModalOpen.value = true;
 }
@@ -59,67 +57,6 @@ async function deleteMemory(memory: Memory) {
   closeConfirmModal();
 }
 
-async function handlePostComment(content: string) {
-  if (!user.value || !selectedMemory.value) return;
-
-  const { data: newComment, error } = await client
-    .from('comments')
-    .insert({
-      user_id: user.value.id,
-      memory_id: selectedMemory.value.id,
-      content: content.trim(),
-    })
-    .select('*, profiles(*)')
-    .single();
-  
-  if (error) {
-    toast.error('Erro ao postar o comentário: ' + error.message);
-  } else if (newComment) {
-    selectedMemoryData.value.comments.push(newComment as CommentWithProfile);
-    toast.success('Comentário adicionado!');
-  }
-}
-
-async function handleLikeToggle() {
-  if (!user.value || !selectedMemory.value) return;
-
-  const memoryId = selectedMemory.value.id;
-  const userId = user.value.sub;
-  const currentLikes = selectedMemoryData.value.likes;
-
-  const existingLike = currentLikes.find(like => like.user_id === userId);
-
-  if (existingLike) {
-    selectedMemoryData.value.likes = currentLikes.filter(like => like.user_id !== userId);
-
-    const { error } = await client
-      .from('likes')
-      .delete()
-      .match({ user_id: userId, memory_id: memoryId });
-
-    if (error) {
-      selectedMemoryData.value.likes = currentLikes;
-      toast.error('Erro ao remover o like.');
-    }
-  } else {
-    const optimisticLike = {
-      user_id: userId,
-      memory_id: memoryId,
-      created_at: new Date().toISOString()
-    };
-    selectedMemoryData.value.likes.push(optimisticLike);
-
-    const { error } = await client
-      .from('likes')
-      .insert({ user_id: userId, memory_id: memoryId });
-
-    if (error) {
-      selectedMemoryData.value.likes = currentLikes;
-      toast.error('Erro ao adicionar o like: ' + error.message);
-    }
-  }
-}
-
 function closeModal() {
   isModalOpen.value = false;
   editingMemory.value = null;
@@ -132,34 +69,6 @@ function closeConfirmModal() {
 
 function handleSuccess() {
   fetchMemories();
-}
-
-const selectedMemory = computed(() => {
-  return selectedMemoryIndex.value > -1 ? memories.value[selectedMemoryIndex.value] : null;
-});
-
-async function openMemoryDetail(index: number) {
-  const memory = memories.value[index];
-  if (!memory) return;
-
-  selectedMemoryIndex.value = index;
-  isDetailModalOpen.value = true;
-  
-  const { data: likes } = await client.from('likes').select('*').eq('memory_id', memory.id);
-  const { data: comments } = await client.from('comments').select('*, profiles(*)').eq('memory_id', memory.id);
-  
-  selectedMemoryData.value = {
-    memory: memory,
-    likes: likes || [],
-    comments: comments || [],
-  };
-}
-
-function handleNavigate(direction: 'prev' | 'next') {
-  const newIndex = direction === 'prev' ? selectedMemoryIndex.value - 1 : selectedMemoryIndex.value + 1;
-  if (newIndex >= 0 && newIndex < memories.value.length) {
-    openMemoryDetail(newIndex);
-  }
 }
 
 onMounted(fetchMemories);
@@ -180,12 +89,12 @@ onMounted(fetchMemories);
 
     <div v-if="loading" class="loading-state"><Icon name="lucide:loader-circle" class="spinner"/> Carregando...</div>
     <div v-else-if="memories.length > 0" class="memories-grid">
-      <div v-for="(memory, index) in memories" :key="memory.id" @click="openMemoryDetail(index)" class="card-wrapper">
+      <div v-for="(memory, index) in memories" :key="memory.id" @click="openMemoryModal(memories, index)" class="card-wrapper">
         <MemoryCard
           :memory="memory"
           :is-owner="true"
           @edit="editMemory(memory)"
-          @delete="promptDeletePeriod(memory)"
+          @delete="promptDeleteMemory(memory)"
         />
       </div>
     </div>
@@ -199,17 +108,6 @@ onMounted(fetchMemories);
         Criar Primeira Memória
       </button>
     </EmptyState>
-
-    <MemoryDetailModal
-      :is-open="isDetailModalOpen"
-      :memory="selectedMemoryData.memory"
-      :likes="selectedMemoryData.likes"
-      :comments="selectedMemoryData.comments"
-      @close="isDetailModalOpen = false"
-      @navigate="handleNavigate"
-      @comment="handlePostComment"
-      @like="handleLikeToggle"
-    />
 
     <Modal
       :is-open="isModalOpen"
@@ -235,11 +133,6 @@ onMounted(fetchMemories);
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
   margin-top: 2rem;
-}
-.loading-state {
-  text-align: center;
-  padding: 2rem;
-  color: hsl(var(--muted-foreground));
 }
 .card-wrapper { cursor: pointer; }
 

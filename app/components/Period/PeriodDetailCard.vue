@@ -50,6 +50,7 @@ const formattedDate = computed(() => {
   background-image: var(--gradient-card);
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
+  margin-bottom: 1.5rem;
 }
 .icon-wrapper {
   background-color: hsl(var(--gold) / .1);

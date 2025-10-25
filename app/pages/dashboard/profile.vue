@@ -7,54 +7,35 @@ definePageMeta({ layout: 'dashboard' });
 
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
+const { profile, fetchProfile } = useProfile();
 
-const firstLetter = computed(() => user.value?.user_metadata.username.charAt(0).toUpperCase() || '?');
-
-const loading = ref(true);
+const loading = ref(false);
 const uploading = ref(false);
-const username = ref('');
-const avatar_url = ref('');
-const dob = ref('');
-const biography = ref('');
 
-onMounted(async () => {
-  if (user.value) {
-    const { data, error } = await client
-      .from('profiles')
-      .select('username, biography, avatar_url, date_of_birth')
-      .eq('id', user.value.sub)
-      .single();
-
-    if (error) {
-      toast.error('Erro ao carregar o perfil.');
-    } else if (data) {
-      username.value = data.username || '';
-      avatar_url.value = data.avatar_url || '';
-      dob.value = data.date_of_birth || '';
-      biography.value = data.biography || '';
-    }
-  }
-  loading.value = false;
+const form = ref({
+  username: '',
+  avatar_url: '',
+  date_of_birth: '',
+  biography: '',
 });
 
-const handleFileChange = async (event: Event) => {
+const firstLetter = computed(() => profile.value?.username.charAt(0).toUpperCase() || '?');
+
+async function handleAvatarChange(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-
   if (!file || !user.value) return;
 
   uploading.value = true;
-
-  const options = {
-    maxSizeMB: 1,
-    maxWidthOrHeight: 64,
-    useWebWorker: true,
-  };
-
   try {
-    const compressedFile = await imageCompression(file, options);
+    const compressedFile = await imageCompression(file, {
+      maxSizeMB: 0.5,
+      maxWidthOrHeight: 64,
+      useWebWorker: true,
+    });
+
     const fileExt = compressedFile.name.split('.').pop();
-    const filePath = `${user.value.sub}.${fileExt}`;
+    const filePath = `${user.value.sub}`;
 
     const { error: uploadError } = await client.storage
       .from('avatars')
@@ -62,37 +43,33 @@ const handleFileChange = async (event: Event) => {
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = client.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    const newAvatarUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
+    const { data: { publicUrl } } = client.storage.from('avatars').getPublicUrl(filePath);
 
     const { error: dbError } = await client
       .from('profiles')
-      .update({ avatar_url: newAvatarUrl })
+      .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
       .eq('id', user.value.sub);
 
     if (dbError) throw dbError;
 
-    avatar_url.value = newAvatarUrl;
-    toast.success('Avatar atualizado com sucesso!');
+    toast.success('Avatar atualizado!');
+    await fetchProfile(true);
+
   } catch (error: any) {
-    toast.error(error.message || 'Falha ao atualizar o avatar.');
+    toast.error(error.message);
   } finally {
     uploading.value = false;
   }
-};
+}
 
-const handleUpdateProfile = async () => {
+async function handleUpdateProfile() {
   loading.value = true;
   if (user.value) {
     const { error } = await client
       .from('profiles')
       .update({
-        username: username.value,
-        date_of_birth: dob.value || null,
-        biography: biography.value,
+        date_of_birth: form.value.date_of_birth || null,
+        biography: form.value.biography,
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.value.sub);
@@ -101,10 +78,20 @@ const handleUpdateProfile = async () => {
       toast.error(error.message);
     } else {
       toast.success('Perfil atualizado com sucesso!');
+      await fetchProfile(true);
     }
   }
   loading.value = false;
-};
+}
+
+watch(profile, (newProfile) => {
+  if (newProfile) {
+    form.value.username = newProfile.username || '';
+    form.value.avatar_url = newProfile.avatar_url || '';
+    form.value.date_of_birth = newProfile.date_of_birth || '';
+    form.value.biography = newProfile.biography || '';
+  }
+}, { immediate: true });
 </script>
 
 <template>
@@ -115,9 +102,9 @@ const handleUpdateProfile = async () => {
           <div class="header-content">
             <div class="avatar-container">
               <div>
-                <img v-if="avatar_url" :src="avatar_url" alt="Avatar" class="avatar"/>
+                <img v-if="profile?.avatar_url" :src="profile.avatar_url" alt="Avatar" class="avatar"/>
                 <span v-else>{{ firstLetter }}</span>
-                <div v-if="loading || uploading" class="upload-overlay">
+                <div v-if="uploading" class="upload-overlay">
                   <Icon name="lucide:loader-circle" class="spinner"/>
                 </div>
               </div>
@@ -125,32 +112,36 @@ const handleUpdateProfile = async () => {
                 <Icon name="lucide:camera" class="icon"/>
               </label>
             </div>
-            <input type="file" id="avatar" name="avatar" accept="image/jpeg, image/png, image/gif" class="hidden" @change="handleFileChange" :disabled="uploading"/>
+            <input type="file" id="avatar" name="avatar" accept="image/jpeg, image/png, image/gif" class="hidden" @change="handleAvatarChange" :disabled="uploading"/>
             <div>
               <h3>Meu Perfil</h3>
               <p>Gerencie suas informações pessoais</p>
             </div>
           </div>
-          <button class="btn secondary">
-            <Icon name="lucide:external-link" class="icon"/>
+          <NuxtLink
+            v-if="profile"
+            :to="`/${profile.username}`"
+            class="btn secondary"
+          >
+            <Icon name="lucide:external-link" />
             Ver Perfil Público
-          </button>
+          </NuxtLink>
         </div>
       </div>
       <div class="card-body">
         <form @submit.prevent="handleUpdateProfile">
           <div class="form-group">
             <label for="username">Nome de usuário</label>
-            <input id="username" v-model="username" type="text"/>
+            <input id="username" v-model="form.username" disabled type="text"/>
           </div>
           <div class="form-group">
             <label for="dob">Data de Nascimento</label>
-            <input id="dob" v-model="dob" type="date"/>
+            <input id="dob" v-model="form.date_of_birth" type="date"/>
             <p class="helper-text">Ao preencher, criaremos automaticamente um período "Vida" começando nesta data.</p>
           </div>
           <div class="form-group full-width">
             <label for="biography">Biografia</label>
-            <textarea id="biography" v-model="biography" rows="4" placeholder="Conte um pouco sobre você..."></textarea>
+            <textarea id="biography" v-model="form.biography" rows="4" placeholder="Conte um pouco sobre você..."></textarea>
           </div>
           <div class="form-actions">
             <button class="btn primary" type="submit" :disabled="loading">
@@ -197,7 +188,6 @@ const handleUpdateProfile = async () => {
 }
 .avatar-container {
   position: relative;
-  cursor: pointer;
 }
 .avatar-container > div {
   position: relative;
@@ -245,6 +235,7 @@ const handleUpdateProfile = async () => {
   background-color: hsl(var(--background) / .6);
   opacity: 0;
   transition: opacity cubic-bezier(.4, 0, .2, 1) .15s;
+  cursor: pointer;
 }
 .avatar-container > label > .icon {
   width: 2rem;
@@ -267,14 +258,6 @@ h3 {
   font-size: .875rem;
   line-height: 1.25rem;
   color: hsl(var(--muted-foreground));
-}
-.secondary {
-  color: hsl(var(--foreground));
-  background-color: hsl(var(--background));
-  border: 1px solid hsl(var(--input));
-}
-.secondary:hover {
-  background-color: hsl(var(--muted));
 }
 .card-body {
   padding: 1.5rem; 

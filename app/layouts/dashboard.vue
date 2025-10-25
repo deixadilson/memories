@@ -1,10 +1,17 @@
 <script setup lang="ts">
+const { fetchProfile } = useProfile();
+const { state, close, navigate, toggleLike, postComment } = useMemoryModal();
+
 const navLinks = [
   { to: '/dashboard', icon: 'lucide:home', label: 'Dashboard' },
   { to: '/dashboard/periods', icon: 'lucide:clock', label: 'Períodos' },
   { to: '/dashboard/memories', icon: 'lucide:image', label: 'Memórias' },
   { to: '/dashboard/people', icon: 'lucide:users', label: 'Pessoas' },
 ];
+
+onMounted(() => {
+  fetchProfile();
+});
 </script>
 
 <template>
@@ -32,6 +39,16 @@ const navLinks = [
         <span class="label">{{ link.label }}</span>
       </NuxtLink>
     </nav>
+    <MemoryDetailModal
+      :is-open="state.isOpen"
+      :memory="state.memory"
+      :likes="state.likes"
+      :comments="state.comments"
+      @close="close"
+      @navigate="navigate"
+      @like="toggleLike"
+      @comment="postComment"
+    />
   </div>
 </template>
 
@@ -83,8 +100,6 @@ nav {
   margin: 0 auto;
   padding: 2rem 1rem;
 }
-
-
 .mobile-nav {
   display: none;
   position: fixed;
@@ -119,8 +134,6 @@ nav {
 .nav-link:hover {
   color: hsl(var(--gold));
 }
-
-
 .main-content :deep(.page-header) {
   display: flex;
   justify-content: space-between;
@@ -155,6 +168,9 @@ nav {
   .mobile-nav {
     display: flex;
     justify-content: space-around;
+  }
+  .main-content {
+    padding-bottom: 5rem;
   }
 }
 </style>

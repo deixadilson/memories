@@ -128,6 +128,10 @@ button, .btn {
   transition-duration: .3s;
   cursor: pointer;
 }
+button .iconify {
+  width: 1rem;
+  height: 1rem;
+}
 .primary {
   color: hsl(var(--primary-foreground));
   background-color: hsl(var(--gold));
@@ -135,6 +139,15 @@ button, .btn {
 }
 .primary:hover {
   background-color: hsl(var(--gold-light));
+}
+
+.secondary {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--input));
+}
+.secondary:hover {
+  background-color: hsl(var(--muted));
 }
 .btn > .icon {
   width: 1rem;
@@ -144,8 +157,46 @@ button, .btn {
 .spinner {
   animation: spin 1s linear infinite;
 }
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  color: hsl(var(--muted-foreground));
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: .5rem 1rem;
+  font-size: .875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  border-radius: calc(var(--radius) - 2px);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(.4, 0, .2, 1);
+  transition-duration: .15s;
+  border: 1px solid transparent;
+}
+.back-link:hover {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
 
 
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
 @keyframes fade-in {
   0% {
     opacity: 0;
@@ -173,6 +224,10 @@ button, .btn {
     opacity: 1;
     transform: translateY(0);
   }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
 }
 @keyframes spin {
   from { transform: rotate(0deg); }

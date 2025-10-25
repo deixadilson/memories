@@ -342,7 +342,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_profile_by_username: {
+        Args: { username_text: string }
+        Returns: {
+          avatar_url: string | null
+          biography: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          id: string
+          updated_at: string | null
+          username: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       date_precision: "today" | "complete" | "month_year" | "year_only"

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { toast } from 'vue-sonner';
-import type { Database } from '~/types/supabase';
 import type { MemoryWithAuthor, CommentWithProfile  } from '~/types/app';
 
 const props = defineProps<{
@@ -88,8 +86,9 @@ function focusCommentInput() {
             </div>
             
             <div class="actions">
-              <button @click="emit('like')" class="action-btn" :class="{ 'liked': userHasLiked }">
-                <Icon name="lucide:heart" />
+              <button @click="emit('like')" class="action-btn">
+                <Icon v-if="userHasLiked" name="ic:favorite" class="like liked" />
+                <Icon v-else name="ic:favorite-border" class="like" />
                 <span>{{ likes.length }}</span>
               </button>
               <button @click="focusCommentInput" class="action-btn">
@@ -277,13 +276,12 @@ function focusCommentInput() {
   color: hsl(var(--accent-foreground));
   background-color: hsl(var(--muted));
 }
-.action-btn .iconify {
-  width: 1rem;
-  height: 1rem;
+.like {
+  width: 1.1rem;
+  height: 1.1rem;
 }
-.action-btn.liked .iconify {
+.liked {
   color: #ef4444;
-  fill: #ef4444;
 }
 .comments-section {
   flex-grow: 1;

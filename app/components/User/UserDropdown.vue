@@ -4,13 +4,14 @@ import { onClickOutside } from '@vueuse/core';
 const user = useSupabaseUser();
 const client = useSupabaseClient();
 const router = useRouter();
+const { profile } = useProfile();
 
 const isOpen = ref(false);
 const dropdown = ref(null);
 
 onClickOutside(dropdown, () => isOpen.value = false);
 
-const firstLetter = computed(() => user.value?.user_metadata.username.charAt(0).toUpperCase() || '?');
+const firstLetter = computed(() => profile.value?.username.charAt(0).toUpperCase() || '?');
 
 const handleLogout = async () => {
   await client.auth.signOut();
@@ -20,23 +21,32 @@ const handleLogout = async () => {
 
 <template>
   <div class="user-menu" ref="dropdown">
-    <button @click="isOpen = !isOpen" class="avatar-button">
-      <span>{{ firstLetter }}</span>
-    </button>
-    <div v-if="isOpen" class="dropdown-content">
-      <div class="dropdown-header">
-        <p class="username">{{ user?.user_metadata.username }}</p>
-        <p class="email">{{ user?.email }}</p>
+    <template v-if="profile">
+      <button @click="isOpen = !isOpen" class="avatar-button">
+        <img
+          v-if="profile.avatar_url"
+          :src="profile.avatar_url"
+          alt="Avatar"
+          class="avatar-image"
+        />
+        <span v-else class="avatar-initial">{{ firstLetter }}</span>
+      </button>
+
+      <div v-if="isOpen" class="dropdown-content">
+        <div class="dropdown-header">
+          <p class="username">{{ profile.username }}</p>
+          <p class="email">{{ user?.email }}</p>
+        </div>
+        <div class="dropdown-divider"></div>
+        <NuxtLink to="/dashboard/profile" class="dropdown-item" @click="isOpen=false">
+          Perfil
+        </NuxtLink>
+        <button @click="handleLogout" class="dropdown-item">
+          Sair
+        </button>
       </div>
-      <div class="dropdown-divider"></div>
-      <NuxtLink to="/dashboard/profile" class="dropdown-item" @click="isOpen=false">
-        Perfil
-      </NuxtLink>
-      <NuxtLink @click="handleLogout" class="dropdown-item">
-        <Icon name="lucide:log-out" />
-        Sair
-      </NuxtLink>
-    </div>
+    </template>
+    <div v-else class="avatar-button skeleton"></div>
   </div>
 </template>
 
@@ -56,10 +66,17 @@ const handleLogout = async () => {
   white-space: nowrap;
   background-color: hsl(var(--gold));
   border-radius: 9999px;
+  overflow: hidden;
+  padding: 0;
 }
 .avatar-button span {
   color: hsl(var(--primary-foreground));
   background-color: hsl(var(--gold));
+}
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .dropdown-content {
   position: absolute;
@@ -75,6 +92,11 @@ const handleLogout = async () => {
   padding: .25rem;
   z-index: 50;
   animation: enter 0.2s ease-out;
+}
+.avatar-initial {
+  color: hsl(var(--primary-foreground));
+  font-size: 1rem;
+  line-height: 1;
 }
 .dropdown-header {
   padding: .5rem;
@@ -105,11 +127,8 @@ const handleLogout = async () => {
 .dropdown-item:hover {
   background-color: hsl(var(--beige) / .5);
 }
-
-@keyframes enter {
-  0% {
-    opacity: 0;
-    transform: translate3d(initial,-.5rem,0) scale3d(.95,.95,.95) rotate(var(initial, 0));
-  }
+.skeleton {
+  background-color: hsl(var(--muted));
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 </style>

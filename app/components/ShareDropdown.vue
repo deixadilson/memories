@@ -26,7 +26,7 @@ function copyLink() {
     <div v-if="isOpen" class="dropdown-content">
       <button @click="copyLink"><Icon name="lucide:link"/><span>Copiar link</span></button>
       <button @click="copyLink"><Icon name="lucide:repeat"/> Repostar</button>
-      <button :to="`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + memoryLink)}`" target="_blank"><Icon name="lucide:message-circle"/> WhatsApp</button>
+      <button :to="`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + memoryLink)}`" target="_blank"><Icon name="lucide:message-circle"/>WhatsApp</button>
       <button :to="`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(memoryLink)}`" target="_blank"><Icon name="lucide:facebook"/>Facebook</button>
       <button :to="`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(memoryLink)}`" target="_blank"><Icon name="lucide:twitter"/>Twitter</button>
     </div>
@@ -91,16 +91,5 @@ function copyLink() {
 .dropdown-content > a:hover {
   background-color: hsl(var(--muted));
   color: hsl(var(--accent-foreground));
-}
-
-@keyframes enter {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 </style>

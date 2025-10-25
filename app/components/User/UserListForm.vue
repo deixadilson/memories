@@ -14,7 +14,7 @@ async function createList() {
 
   loading.value = true;
   const { error } = await client.from('user_lists').insert({
-    owner_id: user.value.id,
+    owner_id: user.value.sub,
     name: listData.value.name,
     description: listData.value.description || null,
   });

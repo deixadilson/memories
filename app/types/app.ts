@@ -16,9 +16,12 @@ export type FriendshipStatus = 'not_friends' | 'following' | 'follower_only' | '
 
 export type CommentWithProfile = Comment & {
   profiles: Profile | null;
-}
+};
 export type MemoryWithAuthor = Memory & {
   profiles: Profile | Profile[] | null;
+};
+export type UserModalState = SelectedMemory & {
+  isOpen: boolean; currentIndex: number; list: MemoryWithAuthor[]
 };
 
 export interface UserWithStatus extends Profile { status: FriendshipStatus; }

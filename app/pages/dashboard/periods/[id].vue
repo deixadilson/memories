@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Period, Memory } from '~/types/app';
+import type { Period, MemoryWithAuthor } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
 const client = useSupabaseClient<Database>();
 const route = useRoute();
 const user = useSupabaseUser();
+const { open: openMemoryModal } = useMemoryModal();
 
 const loading = ref(true);
 const period = ref<Period | null>(null);
-const memories = ref<Memory[]>([]);
+const memories = ref<MemoryWithAuthor[]>([]);
 
 async function fetchData() {
   if (!user.value) return;
@@ -19,7 +20,6 @@ async function fetchData() {
   
   const periodId = route.params.id as string;
 
-  // 1. Busca os detalhes do período
   const { data: periodData, error: periodError } = await client
     .from('periods')
     .select('*')
@@ -32,10 +32,9 @@ async function fetchData() {
   }
   period.value = periodData;
 
-  // 2. Busca as memórias que estão dentro do intervalo de datas do período
   const query = client
     .from('memories')
-    .select('*')
+    .select('*, profiles(*)')
     .eq('user_id', user.value.sub)
     .gte('date', periodData.start_date);
     
@@ -74,7 +73,9 @@ onMounted(fetchData);
       <h2 class="section-title">Memórias deste período ({{ memories.length }})</h2>
       
       <div v-if="memories.length > 0" class="memories-grid">
-        <MemoryCard v-for="memory in memories" :key="memory.id" :memory="memory" />
+        <div v-for="(memory, index) in memories" :key="memory.id" @click="openMemoryModal(memories, index)" class="card-wrapper">
+          <MemoryCard :memory="memory" />
+        </div>
       </div>
       <EmptyState v-else
         icon="lucide:image-off"
@@ -86,36 +87,16 @@ onMounted(fetchData);
 </template>
 
 <style scoped>
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  padding: .5rem 1rem;
-  font-size: .875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  color: hsl(var(--muted-foreground));
-  border-radius: calc(var(--radius) - 2px);
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(.4, 0, .2, 1);
-  transition-duration: .15s;
-}
-.back-link:hover {
-  color: hsl(var(--foreground));
-  background-color: hsl(var(--accent));
-}
-.loading-state { text-align: center; padding: 4rem; }
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
-  margin-top: 2.5rem;
   margin-bottom: 1.5rem;
 }
 .memories-grid {
   display: grid;
   gap: 1.5rem;
 }
+.card-wrapper { cursor: pointer; }
 
 @media (min-width: 768px) {
   .memories-grid {

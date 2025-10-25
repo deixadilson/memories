@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import imageCompression from 'browser-image-compression';
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
 import type { Memory, MemoryInsert, DatePrecision, MemoryFormData } from '~/types/app';
@@ -94,15 +95,33 @@ async function handleSubmit() {
       break;
   }
 
-  const newMemoryId = crypto.randomUUID();
-  let mediaUrls: string[] = [];
+  const newMemoryId = isEditMode.value ? props.initialData!.id : crypto.randomUUID();
+  let mediaUrls: string[] = isEditMode.value ? props.initialData!.media_urls || [] : [];
 
   if (selectedFiles.value.length > 0) {
-    const uploadPromises = selectedFiles.value.map(file => {
+    const compressionOptions = {
+      maxSizeMB: .5,
+      maxWidthOrHeight: 1040,
+      useWebWorker: true,
+    };
+
+    const uploadPromises = selectedFiles.value.map(async (file) => {
+      let fileToUpload = file;
+
+      if (file.type.startsWith('image/')) {
+        try {
+          fileToUpload = await imageCompression(file, compressionOptions);
+        } catch (error) {
+          console.error('Falha ao comprimir imagem.', error);
+          toast.warning(`Não foi possível otimizar a imagem "${file.name}".`);
+        }
+      }
       const fileExt = file.name.split('.').pop();
-      const uniqueFileName = `${Date.now()}.${fileExt}`;
+      const uniqueFileName = `${Date.now()}${Math.floor(Math.random() * 100)}.${fileExt}`;
       const filePath = `${user.value!.sub}/${newMemoryId}/${uniqueFileName}`;
-      return client.storage.from('memories-media').upload(filePath, file);
+
+      return client.storage.from('memories-media').upload(filePath, fileToUpload);
+
     });
 
     const results = await Promise.all(uploadPromises);
@@ -113,13 +132,15 @@ async function handleSubmit() {
       return;
     }
     
-    mediaUrls = results.map(res => client.storage.from('memories-media').getPublicUrl(res.data!.path).data.publicUrl);
+    const newUrls = results.map(res => client.storage.from('memories-media').getPublicUrl(res.data!.path).data.publicUrl);
+    mediaUrls = [...mediaUrls, ...newUrls];
   }
 
   const dataToSubmit: Omit<MemoryInsert, 'user_id' | 'id'> = {
     ...memoryData.value,
     date: finalDate,
     date_precision: datePrecision.value,
+    media_urls: mediaUrls.length > 0 ? mediaUrls : null,
     updated_at: new Date().toISOString(),
   };
 

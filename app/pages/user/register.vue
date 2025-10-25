@@ -3,7 +3,7 @@
     <form @submit.prevent="handleRegister">
       <div class="form-group">
         <label for="username">Nome de usuário</label>
-        <input type="text" id="username" v-model="username" placeholder="Seu nome de usuário" required />
+        <input type="text" id="username" v-model="username" pattern="^[a-z0-9_.-]{3,15}$" placeholder="Seu nome de usuário" required />
       </div>
       <div class="form-group">
         <label for="email">Email</label>
