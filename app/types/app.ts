@@ -3,6 +3,8 @@ import type { Database } from './supabase';
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Period = Database['public']['Tables']['periods']['Row'];
 export type Memory = Database['public']['Tables']['memories']['Row'];
+export type UserList = Database['public']['Tables']['user_lists']['Row'];
+export type UserListMember = Database['public']['Tables']['user_list_members']['Row'];
 export type Friendship = Database['public']['Tables']['friendships']['Row'];
 export type Like = Database['public']['Tables']['likes']['Row'];
 export type Comment = Database['public']['Tables']['comments']['Row'];
@@ -19,6 +21,12 @@ export type CommentWithProfile = Comment & {
 };
 export type MemoryWithAuthor = Memory & {
   profiles: Profile | Profile[] | null;
+};
+export type UserListWithMembers = UserList & {
+  user_list_members: UserListMember[];
+};
+export type FollowerWithMembership = UserWithStatus & {
+  isMemberList: boolean;
 };
 export type UserModalState = SelectedMemory & {
   isOpen: boolean;

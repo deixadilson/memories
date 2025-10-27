@@ -34,7 +34,7 @@ onClickOutside(menu, () => isMenuOpen.value = false);
         <NuxtLink :to="`/${user.username}`" class="username-link">
           <p class="username">{{ user.username }}</p>
         </NuxtLink>
-        <p v-if="status === 'following' || 'follower_only'" class="status-text">Segue você</p>
+        <p v-if="status === 'follower_only'" class="status-text">Segue você</p>
         <p v-if="status === 'blocked'" class="status-text">Bloqueado</p>
       </div>
     </div>

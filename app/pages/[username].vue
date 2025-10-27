@@ -9,10 +9,12 @@ const client = useSupabaseClient<Database>();
 const route = useRoute();
 const loggedInUser = useSupabaseUser();
 const { open: openMemoryModal } = useMemoryModal();
+const { getFriendshipStatus } = useFriendship();
 
 const viewState = ref<'periods-list' | 'period-details'>('periods-list');
 const loadingProfile = ref(true);
 const loadingMemories = ref(true);
+const loadingAction = ref(false);
 const profile = ref<Profile | null>(null);
 const periods = ref<Period[]>([]);
 const selectedPeriod = ref<Period | null>(null);
@@ -22,6 +24,7 @@ const stats = ref({ memories: 0, followers: 0, following: 0 });
 
 async function fetchData() {
   const username = route.params.username as string;
+  if (!loggedInUser.value) return;
 
   loadingProfile.value = true;
   const { data: profileData, error: profileError } = await client
@@ -35,39 +38,90 @@ async function fetchData() {
   }
   profile.value = profileData;
 
-  const [memoriesCount, followersCount, followingCount] = await Promise.all([
-    client.from('memories').select('*', { count: 'exact', head: true }).eq('user_id', profileData.id).eq('visibility', 'public'),
-    client.from('friendships').select('*', { count: 'exact', head: true }).eq('receiver_id', profileData.id).eq('status', 'accepted'),
-    client.from('friendships').select('*', { count: 'exact', head: true }).eq('requester_id', profileData.id).eq('status', 'accepted')
-  ]);
-
   if (profileData.id === loggedInUser.value?.sub) {
     friendshipStatus.value = 'self';
   } else {
-    const { data: friendship } = await client.from('friendships').select('*')
-      .or(`(requester_id.eq.${loggedInUser.value?.sub},and(receiver_id.eq.${profileData.id}))`)
-      .single();
-    if (friendship && friendship.status === 'accepted') {
-      friendshipStatus.value = 'following'; 
-    } else if (friendship && friendship.status === 'pending') {
-      friendshipStatus.value = 'request_sent';
-    }
+    const { data: relationships } = await client
+      .from('friendships')
+      .select('*')
+      .or(
+        `and(requester_id.eq.${loggedInUser.value.sub},receiver_id.eq.${profileData.id}),` +
+        `and(requester_id.eq.${profileData.id},receiver_id.eq.${loggedInUser.value.sub})`
+      );
+
+    friendshipStatus.value = getFriendshipStatus(loggedInUser.value.sub, relationships || [], profileData.id);
   }
+
+  const [memoriesCount, followersCount, followingCount, periodsData] = await Promise.all([
+    client.from('memories').select('*', { count: 'exact', head: true }).eq('user_id', profileData.id).eq('visibility', 'public'),
+    client.from('friendships').select('*', { count: 'exact', head: true }).eq('receiver_id', profileData.id).eq('status', 'accepted'),
+    client.from('friendships').select('*', { count: 'exact', head: true }).eq('requester_id', profileData.id).eq('status', 'accepted'),
+    client.from('periods').select('*').eq('user_id', profileData.id).eq('visibility', 'public').order('start_date', { ascending: false })
+  ]);
 
   stats.value = {
     memories: memoriesCount?.count ?? 0,
     followers: followersCount?.count ?? 0,
     following: followingCount?.count ?? 0,
   };
-
-  const { data: periodsData } = await client.from('periods')
-    .select('*')
-    .eq('user_id', profileData.id)
-    .eq('visibility', 'public')
-    .order('start_date', { ascending: false });
   
-  periods.value = periodsData || [];
+  periods.value = periodsData.data || [];
   loadingProfile.value = false;
+}
+
+async function handleAction(action: 'follow' | 'unfollow' | 'cancel_request' | 'accept' | 'reject' | 'block' | 'unblock') {
+  if (!loggedInUser.value || !profile.value || loadingAction.value) return;
+  
+  loadingAction.value = true;
+  const loggedInUserId = loggedInUser.value.sub;
+  const otherUserId = profile.value.id;
+
+  try {
+    let error: any;
+    switch (action) {
+      case 'follow':
+        ({ error } = await client.from('friendships').insert({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'pending' }));
+        if (error) throw error;
+        toast.success('Enviada solicitação para seguir.');
+        break;
+
+      case 'unfollow':
+      case 'cancel_request':
+        ({ error } = await client.from('friendships').delete().match({ requester_id: loggedInUserId, receiver_id: otherUserId }));
+        if (error) throw error;
+        toast.success(action === 'unfollow' ? 'Você deixou de seguir.' : 'Solicitação cancelada.');
+        break;
+
+      case 'accept':
+        ({ error } = await client.from('friendships').update({ status: 'accepted', updated_at: new Date().toISOString() }).match({ requester_id: otherUserId, receiver_id: loggedInUserId }));
+        if (error) throw error;
+        toast.success('Solicitação aceita!');
+        break;
+      
+      case 'reject':
+        ({ error } = await client.from('friendships').delete().match({ requester_id: otherUserId, receiver_id: loggedInUserId }));
+        if (error) throw error;
+        toast.success('Solicitação rejeitada.');
+        break;
+
+      case 'block':
+        ({ error } = await client.from('friendships').upsert({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'blocked' }));
+        if (error) throw error;
+        toast.success('Usuário bloqueado.');
+        break;
+
+      case 'unblock':
+        ({ error } = await client.from('friendships').delete().match({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'blocked' }));
+        if (error) throw error;
+        toast.success('Usuário desbloqueado.');
+        break;
+    }
+    await fetchData();
+  } catch (error: any) {
+    toast.error('Ocorreu um erro: ' + error.message);
+  } finally {
+    loadingAction.value = false;
+  }
 }
 
 async function selectPeriod(period: Period) {
@@ -98,7 +152,7 @@ onMounted(fetchData);
 <template>
   <div v-if="loadingProfile" class="loading-state"><Icon name="lucide:loader-circle" class="spinner" /><span>Carregando perfil...</span></div>
   <div v-else-if="profile">
-    <ProfileHeader :profile="profile" :status="friendshipStatus" :stats="stats" />
+    <ProfileHeader :profile="profile" :status="friendshipStatus" :loading="loadingAction" @action="handleAction" :stats="stats" />
     
     <div v-if="viewState === 'periods-list'">
       <h2 class="section-title">Períodos de Vida</h2>

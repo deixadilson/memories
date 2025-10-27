@@ -4,37 +4,49 @@ import type { UserWithStatus } from '~/types/app';
 const props = defineProps<{
   users: UserWithStatus[];
   actingUserId: string | null;
+  emptyTitle: string;
+  emptyMessage: string;
+  emptyIcon: string;
 }>();
+
 const emit = defineEmits(['action']);
 
 const searchQuery = ref('');
 
 const filteredUsers = computed(() => {
-  return (props.users).filter(p => p.username.toLowerCase().includes(searchQuery.value.toLowerCase()));
+  if (!searchQuery.value) {
+    return props.users;
+  }
+  return props.users.filter(user =>
+    user.username.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
 });
-
-function handleAction(userId: string, action: any) {
-  emit('action', userId, action);
-}
 </script>
 
 <template>
-  <div class="tab-content">
+  <div class="list-container">
     <div class="search-bar">
       <Icon name="lucide:search" class="search-icon" />
       <input v-model="searchQuery" type="text" placeholder="Pesquisar por nome de usuário..." />
     </div>
-    <div class="user-list">
+
+    <div v-if="filteredUsers.length > 0" class="user-list">
       <UserListItem
         v-for="user in filteredUsers"
         :key="user.id"
         :user="user"
         :status="user.status"
         :acting-user-id="actingUserId"
-        @action="(action) => handleAction(user.id, action)"
+        @action="(action) => emit('action', user.id, action)"
       />
-      <EmptyState v-if="filteredUsers.length === 0" icon="lucide:user-search" title="Nenhum usuário encontrado" message="Tente outros critérios de busca." />
     </div>
+    
+    <EmptyState
+      v-else
+      :icon="emptyIcon"
+      :title="emptyTitle"
+      :message="emptyMessage"
+    />
   </div>
 </template>
 

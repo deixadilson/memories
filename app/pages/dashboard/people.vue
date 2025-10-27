@@ -7,8 +7,9 @@ definePageMeta({ layout: 'dashboard' });
 
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
+const { getFriendshipStatus } = useFriendship();
 
-const activeTab = ref('users');
+const activeTab = ref<'users' | 'following' | 'followers' | 'lists'>('users');
 const loading = ref(true);
 const profiles = ref<Profile[]>([]);
 const relationships = ref<Friendship[]>([]);
@@ -35,30 +36,48 @@ async function fetchData() {
 
 onMounted(fetchData);
 
-function getRelationshipStatus(otherUserId: string): FriendshipStatus {
+function determineFriendshipStatus(otherUserId: string): FriendshipStatus {
   if (!user.value) return 'not_friends';
-  const iFollowThem = relationships.value.find(f => f.requester_id === user.value!.sub && f.receiver_id === otherUserId);
-  const theyFollowMe = relationships.value.find(f => f.requester_id === otherUserId && f.receiver_id === user.value!.sub);
-  if (iFollowThem?.status === 'blocked') return 'blocked';
-  if (theyFollowMe?.status === 'blocked') return 'not_friends';
-  if (iFollowThem?.status === 'accepted') return 'following';
-  if (theyFollowMe?.status === 'accepted') return 'follower_only';
-  if (iFollowThem?.status === 'pending') return 'request_sent';
-  if (theyFollowMe?.status === 'pending') return 'request_received';
-  return 'not_friends';
+  return getFriendshipStatus(user.value.sub, relationships.value, otherUserId);
 }
 
 const usersWithStatus = computed(() => {
   return profiles.value
-    .map(p => ({ ...p, status: getRelationshipStatus(p.id) }))
+    .map(p => ({ ...p, status: determineFriendshipStatus(p.id) }))
     .filter(p => {
       const theirRelationshipWithMe = relationships.value.find(f => f.requester_id === p.id && f.receiver_id === user.value!.sub);
       return theirRelationshipWithMe?.status !== 'blocked';
     });
 });
 
-const following = computed(() => usersWithStatus.value.filter(u => u.status === 'following'));
+const following = computed(() => usersWithStatus.value.filter(u => u.status === 'following' || u.status === 'mutual'));
 const followers = computed(() => usersWithStatus.value.filter(u => u.status === 'follower_only' || u.status === 'request_received'));
+
+const activeList = computed(() => {
+  switch (activeTab.value) {
+    case 'users':
+      return usersWithStatus.value;
+    case 'following':
+      return following.value;
+    case 'followers':
+      return followers.value;
+    default:
+      return [];
+  }
+});
+
+const emptyStateProps = computed(() => {
+  switch (activeTab.value) {
+    case 'users':
+      return { icon: 'lucide:search', title: 'Nenhum usuário encontrado', message: 'Tente outros critérios de busca.' };
+    case 'following':
+      return { icon: 'lucide:user-plus', title: 'Você não segue ninguém', message: 'Quando você seguir alguém, aparecerá aqui.' };
+    case 'followers':
+      return { icon: 'lucide:users', title: 'Nenhum seguidor', message: 'Quando alguém te seguir, aparecerá aqui.' };
+    default:
+      return { icon: '', title: '', message: '' };
+  }
+});
 
 async function handleAction(otherUserId: string, action: 'follow' | 'unfollow' | 'cancel_request' | 'accept' | 'reject' | 'block' | 'unblock') {
   if (!user.value || actingUserId.value) return;
@@ -121,9 +140,7 @@ async function handleAction(otherUserId: string, action: 'follow' | 'unfollow' |
   }
 }
 
-function handleSuccess() {
-  fetchData();
-}
+function handleSuccess() { fetchData(); }
 </script>
 
 <template>
@@ -145,13 +162,21 @@ function handleSuccess() {
       <button @click="activeTab = 'lists'" :class="{ active: activeTab === 'lists' }" class="tab-item">Listas</button>
     </div>
 
-    <div v-if="loading" class="loading-state"><Icon name="lucide:loader-circle" class="spinner"/> Carregando...</div>
-    <div v-else>
-      <PeopleSearch v-if="activeTab === 'users'" :users="usersWithStatus" :acting-user-id="actingUserId" @action="handleAction" />
-      <FollowingList v-if="activeTab === 'following'" :users="following" :acting-user-id="actingUserId" />
-      <FollowersList v-if="activeTab === 'followers'" :users="followers" :acting-user-id="actingUserId" />
-      <UserLists v-if="activeTab === 'lists'"/>
+    <div v-if="loading" class="loading-state">
+      <Icon name="lucide:loader-circle" class="spinner"/> Carregando...
     </div>
+    <div v-else>
+      <UserList
+        v-if="activeTab !== 'lists'"
+        :users="activeList"
+        :acting-user-id="actingUserId"
+        :empty-title="emptyStateProps.title"
+        :empty-message="emptyStateProps.message"
+        :empty-icon="emptyStateProps.icon"
+        @action="handleAction"
+      />
+    </div>
+    <UserLists v-if="activeTab === 'lists'" :followers="followers" />
 
     <Modal :is-open="isModalOpen" title="Adicionar Nova Pessoa" @close="isModalOpen = false">
       <PersonForm @close="isModalOpen = false" @success="handleSuccess" />
