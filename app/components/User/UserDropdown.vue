@@ -39,10 +39,14 @@ const handleLogout = async () => {
         </div>
         <div class="dropdown-divider"></div>
         <NuxtLink to="/dashboard/profile" class="dropdown-item" @click="isOpen=false">
-          Perfil
+          <Icon name="lucide:user-circle" /><span>Perfil</span>
         </NuxtLink>
+        <NuxtLink to="/dashboard/change-password" class="dropdown-item" @click="isOpen=false">
+          <Icon name="lucide:key-round" /><span>Alterar Senha</span>
+        </NuxtLink>
+        <div class="dropdown-divider"></div>
         <button @click="handleLogout" class="dropdown-item">
-          Sair
+          <Icon name="lucide:log-out" /><span>Sair</span>
         </button>
       </div>
     </template>
@@ -118,11 +122,17 @@ const handleLogout = async () => {
   margin: .25rem;
 }
 .dropdown-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
   padding: 0.375rem .5rem;
   font-size: 0.875rem;
   line-height: 1.25rem;
   cursor: pointer;
+}
+button.dropdown-item {
+  width: 100%;
+  justify-content: left;
 }
 .dropdown-item:hover {
   background-color: hsl(var(--beige) / .5);

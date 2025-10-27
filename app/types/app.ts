@@ -12,7 +12,7 @@ export type DatePrecision = Database['public']['Enums']['date_precision'];
 export type MemoryCategory = Database['public']['Enums']['memory_category'];
 export type PeriodType = Database['public']['Enums']['period_type'];
 export type VisibilityType = Database['public']['Enums']['visibility_type']
-export type FriendshipStatus = 'not_friends' | 'following' | 'follower_only' | 'mutual' | 'request_sent' | 'request_received';
+export type FriendshipStatus = 'not_friends' | 'following' | 'follower_only' | 'mutual' | 'request_sent' | 'request_received' | 'blocked';
 
 export type CommentWithProfile = Comment & {
   profiles: Profile | null;
@@ -21,7 +21,10 @@ export type MemoryWithAuthor = Memory & {
   profiles: Profile | Profile[] | null;
 };
 export type UserModalState = SelectedMemory & {
-  isOpen: boolean; currentIndex: number; list: MemoryWithAuthor[]
+  isOpen: boolean;
+  currentIndex: number;
+  liking: boolean;
+  list: MemoryWithAuthor[];
 };
 
 export interface UserWithStatus extends Profile { status: FriendshipStatus; }

@@ -3,6 +3,7 @@ import type { MemoryWithAuthor, CommentWithProfile  } from '~/types/app';
 
 const props = defineProps<{
   isOpen: boolean;
+  liking: boolean;
   memory: MemoryWithAuthor | null;
   likes: any[];
   comments: CommentWithProfile[];
@@ -86,8 +87,9 @@ function focusCommentInput() {
             </div>
             
             <div class="actions">
-              <button @click="emit('like')" class="action-btn">
-                <Icon v-if="userHasLiked" name="ic:favorite" class="like liked" />
+              <button @click="emit('like')" class="action-btn" :disabled="liking">
+                <Icon v-if="liking" name="lucide:loader-circle" class="spinner" />
+                <Icon v-else-if="userHasLiked" name="ic:favorite" class="like liked" />
                 <Icon v-else name="ic:favorite-border" class="like" />
                 <span>{{ likes.length }}</span>
               </button>

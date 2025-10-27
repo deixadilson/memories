@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { fetchProfile } = useProfile();
+const user = useSupabaseUser();
+const { fetchProfile, clearProfile } = useProfile();
 const { state, close, navigate, toggleLike, postComment } = useMemoryModal();
 
 const navLinks = [
@@ -9,9 +10,10 @@ const navLinks = [
   { to: '/dashboard/people', icon: 'lucide:users', label: 'Pessoas' },
 ];
 
-onMounted(() => {
-  fetchProfile();
-});
+watch(user, (newUser) => {
+  if (newUser) fetchProfile();
+  else clearProfile();
+}, { immediate: true });
 </script>
 
 <template>
@@ -44,6 +46,7 @@ onMounted(() => {
       :memory="state.memory"
       :likes="state.likes"
       :comments="state.comments"
+      :liking="state.liking"
       @close="close"
       @navigate="navigate"
       @like="toggleLike"

@@ -10,10 +10,9 @@ const user = useSupabaseUser();
 
 const activeTab = ref('users');
 const loading = ref(true);
-
 const profiles = ref<Profile[]>([]);
 const relationships = ref<Friendship[]>([]);
-
+const actingUserId = ref<string | null>(null);
 const isModalOpen = ref(false);
 
 async function fetchData() {
@@ -36,44 +35,90 @@ async function fetchData() {
 
 onMounted(fetchData);
 
-function getRelationshipStatus(userId: string): FriendshipStatus {
-  const iFollowThem = relationships.value.find(f => f.requester_id === user.value?.id && f.receiver_id === userId);
-  const theyFollowMe = relationships.value.find(f => f.requester_id === userId && f.receiver_id === user.value?.sub);
-
-  const isFollowing = iFollowThem?.status === 'accepted';
-  const isFollower = theyFollowMe?.status === 'accepted';
-
-  if (isFollowing && isFollower) return 'mutual';
-  if (isFollowing) return 'following';
-  if (isFollower) return 'follower_only';
-
+function getRelationshipStatus(otherUserId: string): FriendshipStatus {
+  if (!user.value) return 'not_friends';
+  const iFollowThem = relationships.value.find(f => f.requester_id === user.value!.sub && f.receiver_id === otherUserId);
+  const theyFollowMe = relationships.value.find(f => f.requester_id === otherUserId && f.receiver_id === user.value!.sub);
+  if (iFollowThem?.status === 'blocked') return 'blocked';
+  if (theyFollowMe?.status === 'blocked') return 'not_friends';
+  if (iFollowThem?.status === 'accepted') return 'following';
+  if (theyFollowMe?.status === 'accepted') return 'follower_only';
   if (iFollowThem?.status === 'pending') return 'request_sent';
   if (theyFollowMe?.status === 'pending') return 'request_received';
-  
   return 'not_friends';
 }
 
 const usersWithStatus = computed(() => {
-  return profiles.value.map(p => ({
-    ...p,
-    status: getRelationshipStatus(p.id)
-  }));
+  return profiles.value
+    .map(p => ({ ...p, status: getRelationshipStatus(p.id) }))
+    .filter(p => {
+      const theirRelationshipWithMe = relationships.value.find(f => f.requester_id === p.id && f.receiver_id === user.value!.sub);
+      return theirRelationshipWithMe?.status !== 'blocked';
+    });
 });
 
-const following = computed(() => usersWithStatus.value.filter(u => u.status === 'following' || u.status === 'mutual'));
-const followers = computed(() => usersWithStatus.value.filter(u => u.status === 'follower_only' || u.status === 'mutual'));
+const following = computed(() => usersWithStatus.value.filter(u => u.status === 'following'));
+const followers = computed(() => usersWithStatus.value.filter(u => u.status === 'follower_only' || u.status === 'request_received'));
 
-async function handleAction(userId: string, action: 'follow' | 'accept' | 'reject' | 'block') {
-  if (!user.value) return;
+async function handleAction(otherUserId: string, action: 'follow' | 'unfollow' | 'cancel_request' | 'accept' | 'reject' | 'block' | 'unblock') {
+  if (!user.value || actingUserId.value) return;
+  
+  const loggedInUserId = user.value.sub;
+  actingUserId.value = otherUserId;
+  try {
+    let error: any;
+    switch (action) {
+      case 'follow':
+        ({ error } = await client.from('friendships').insert({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'accepted' }));
+        if (error) throw error;
+        relationships.value.push({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'pending', created_at: new Date().toISOString(), id: '', updated_at: null });
+        toast.success('Enviada solicitação para seguir.');
+        break;
 
-  if (action === 'follow') {
-    const { error } = await client
-      .from('friendships')
-      .insert({ requester_id: user.value.sub, receiver_id: userId });
-    
-    if (error) toast.error(error.message); else toast.success('Solicitação enviada!');
-  }  
-  await fetchData();
+      case 'unfollow':
+      case 'cancel_request':
+        ({ error } = await client.from('friendships').delete().match({ requester_id: loggedInUserId, receiver_id: otherUserId }));
+        if (error) throw error;
+        relationships.value = relationships.value.filter(f => !(f.requester_id === loggedInUserId && f.receiver_id === otherUserId));
+        toast.success(action === 'unfollow' ? 'Você deixou de seguir.' : 'Solicitação cancelada.');
+        break;
+
+      case 'accept':
+        ({ error } = await client.from('friendships').update({ status: 'accepted', updated_at: new Date().toISOString() }).match({ requester_id: otherUserId, receiver_id: loggedInUserId }));
+        if (error) throw error;
+        const relToAccept = relationships.value.find(f => f.requester_id === otherUserId && f.receiver_id === loggedInUserId);
+        if (relToAccept) relToAccept.status = 'accepted';
+        toast.success('Solicitação aceita!');
+        break;
+      
+      case 'reject':
+        ({ error } = await client.from('friendships').delete().match({ requester_id: otherUserId, receiver_id: loggedInUserId }));
+        if (error) throw error;
+        relationships.value = relationships.value.filter(f => !(f.requester_id === otherUserId && f.receiver_id === loggedInUserId));
+        toast.success('Solicitação rejeitada.');
+        break;
+
+      case 'block':
+        ({ error } = await client.from('friendships').upsert({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'blocked' }));
+        if (error) throw error;
+        const relToBlock = relationships.value.find(f => f.requester_id === loggedInUserId && f.receiver_id === otherUserId);
+        if (relToBlock) relToBlock.status = 'blocked';
+        else relationships.value.push({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'blocked', created_at: new Date().toISOString(), id: '', updated_at: null });
+        toast.success('Usuário bloqueado.');
+        break;
+
+      case 'unblock':
+        ({ error } = await client.from('friendships').delete().match({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'blocked' }));
+        if (error) throw error;
+        relationships.value = relationships.value.filter(f => !(f.requester_id === loggedInUserId && f.receiver_id === otherUserId));
+        toast.success('Usuário desbloqueado.');
+        break;
+    }
+  } catch (error: any) {
+    toast.error('Ocorreu um erro: ' + error.message);
+  } finally {
+    actingUserId.value = null;
+  }
 }
 
 function handleSuccess() {
@@ -102,9 +147,9 @@ function handleSuccess() {
 
     <div v-if="loading" class="loading-state"><Icon name="lucide:loader-circle" class="spinner"/> Carregando...</div>
     <div v-else>
-      <PeopleSearch v-if="activeTab === 'users'" :users="usersWithStatus" @action="handleAction" />
-      <FollowingList v-if="activeTab === 'following'" :users="following" />
-      <FollowersList v-if="activeTab === 'followers'" :users="followers" />
+      <PeopleSearch v-if="activeTab === 'users'" :users="usersWithStatus" :acting-user-id="actingUserId" @action="handleAction" />
+      <FollowingList v-if="activeTab === 'following'" :users="following" :acting-user-id="actingUserId" />
+      <FollowersList v-if="activeTab === 'followers'" :users="followers" :acting-user-id="actingUserId" />
       <UserLists v-if="activeTab === 'lists'"/>
     </div>
 

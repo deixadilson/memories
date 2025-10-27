@@ -9,6 +9,7 @@ export const useMemoryModal = () => {
     likes: [],
     comments: [],
     currentIndex: -1,
+    liking: false,
     list: [],
   }));
 
@@ -56,35 +57,35 @@ export const useMemoryModal = () => {
   };
 
   const toggleLike = async () => {
-    if (!user.value || !state.value.memory) return;
+    if (!user.value || !state.value.memory || state.value.liking) return;
 
-    const { id: memoryId } = state.value.memory;
-    const { sub: userId } = user.value;
-    const existingLike = state.value.likes.find(l => l.user_id === userId);
+    try {
+      state.value.liking = true;
 
-    if (existingLike) {
-      state.value.likes = state.value.likes.filter(l => l.user_id !== userId);
+      const { id: memoryId } = state.value.memory;
+      const { sub: userId } = user.value;
+      const existingLike = state.value.likes.find(l => l.user_id === userId);
 
-      const { error } = await client
-        .from('likes')
-        .delete()
-        .match({ user_id: userId, memory_id: memoryId });
-      
-      if (error) {
-        toast.error("Erro ao descurtir.");
-        state.value.likes.push(existingLike);
-      }
-    } else {
-      const newLike: Like = { user_id: userId, memory_id: memoryId, created_at: new Date().toISOString() };
-      state.value.likes.push(newLike);
-      const { error } = await client
-        .from('likes')
-        .insert({ user_id: userId, memory_id: memoryId });
-      
-      if (error) {
-        toast.error("Erro ao curtir.");
+      if (existingLike) {
         state.value.likes = state.value.likes.filter(l => l.user_id !== userId);
+        const { error } = await client.from('likes').delete().match({ user_id: userId, memory_id: memoryId });
+        if (error) {
+          toast.error("Erro ao descurtir.");
+          state.value.likes.push(existingLike);
+        }
+      } else {
+        const newLike: Like = { user_id: userId, memory_id: memoryId, created_at: new Date().toISOString() };
+        state.value.likes.push(newLike);
+        const { error } = await client.from('likes').insert({ user_id: userId, memory_id: memoryId });
+        if (error) {
+          toast.error("Erro ao curtir.");
+          state.value.likes = state.value.likes.filter(l => l.user_id !== userId);
+        }
       }
+    } catch (e) {
+      toast.error("Ocorreu um erro inesperado.");
+    } finally {
+      state.value.liking = false;
     }
   };
 

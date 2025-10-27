@@ -30,8 +30,13 @@ export const useProfile = () => {
     }
   };
 
+  const clearProfile = () => {
+    profile.value = null;
+  };
+
   return {
     profile,
     fetchProfile,
+    clearProfile
   };
 };

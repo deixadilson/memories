@@ -107,7 +107,7 @@ onMounted(fetchData);
           <PeriodCard :period="period" />
         </div>
       </div>
-      <EmptyState v-else icon="lucide:clock" title="Nenhum período encontrado." :message="`${profile.username} não registrou nenhum período público.`"></EmptyState>
+      <EmptyState v-else icon="lucide:image-off" title="Nenhum período encontrado." :message="`${profile.username} não registrou nenhum período público.`"></EmptyState>
     </div>
 
     <div v-if="viewState === 'period-details' && selectedPeriod">
@@ -123,7 +123,7 @@ onMounted(fetchData);
           <MemoryCard :memory="memory" />
         </div>
       </div>
-      <EmptyState v-else icon="lucide:image" title="Nenhuma memória encontrada." :message="`${profile.username} não registrou memórias públicas neste período.`"></EmptyState>
+      <EmptyState v-else icon="lucide:image-off" title="Nenhuma memória encontrada." :message="`${profile.username} não registrou memórias públicas neste período.`"></EmptyState>
     </div>
   </div>
 </template>

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { UserWithStatus } from '~/types/app';
 
-const props = defineProps<{ users: UserWithStatus[] }>();
+const props = defineProps<{
+  users: UserWithStatus[];
+  actingUserId: string | null;
+}>();
 const emit = defineEmits(['action']);
 
 const searchQuery = ref('');
@@ -27,6 +30,7 @@ function handleAction(userId: string, action: any) {
         :key="user.id"
         :user="user"
         :status="user.status"
+        :acting-user-id="actingUserId"
         @action="(action) => handleAction(user.id, action)"
       />
       <EmptyState v-if="filteredUsers.length === 0" icon="lucide:user-search" title="Nenhum usuário encontrado" message="Tente outros critérios de busca." />

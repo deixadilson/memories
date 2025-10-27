@@ -148,7 +148,7 @@ watch(profile, (newProfile) => {
               <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
               {{ loading ? 'Salvando...' : 'Salvar Alterações' }}
             </button>
-            <button class="btn secondary" type="button">Cancelar</button>
+            <NuxtLink to="/dashboard" class="btn secondary" type="button">Cancelar</NuxtLink>
           </div>
         </form>
       </div>
@@ -224,14 +224,9 @@ watch(profile, (newProfile) => {
   display: none;
 }
 .avatar-container > label {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: flex; justify-content: center; align-items: center;
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   background-color: hsl(var(--background) / .6);
   opacity: 0;
   transition: opacity cubic-bezier(.4, 0, .2, 1) .15s;
@@ -265,7 +260,7 @@ h3 {
 }
 label {
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: .875rem;
   line-height: 1;
 }
 input, textarea {
