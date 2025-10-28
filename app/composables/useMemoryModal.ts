@@ -1,6 +1,6 @@
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { UserModalState, MemoryWithAuthor, CommentWithProfile, Like } from '~/types/app';
+import type { UserModalState, MemoryComplete, CommentWithProfile, Like } from '~/types/app';
 
 export const useMemoryModal = () => {
   const state = useState<UserModalState>('memory-modal-state', () => ({
@@ -16,7 +16,7 @@ export const useMemoryModal = () => {
   const client = useSupabaseClient<Database>();
   const user = useSupabaseUser();
 
-  const _fetchDetails = async (memory: MemoryWithAuthor) => {
+  const _fetchDetails = async (memory: MemoryComplete) => {
     state.value.memory = memory;
     state.value.likes = [];
     state.value.comments = [];
@@ -27,10 +27,10 @@ export const useMemoryModal = () => {
     ]);
 
     state.value.likes = likesRes.data || [];
-    state.value.comments = (commentsRes.data as CommentWithProfile[]) || [];
+    state.value.comments = (commentsRes.data) || [];
   };
 
-  const open = (memories: MemoryWithAuthor[], startIndex: number) => {
+  const open = (memories: MemoryComplete[], startIndex: number) => {
     if (!memories[startIndex]) return;
     state.value.list = memories;
     state.value.currentIndex = startIndex;
@@ -106,7 +106,7 @@ export const useMemoryModal = () => {
       toast.error("Erro ao comentar.");
     }
     else {
-      state.value.comments.push(data as CommentWithProfile);
+      state.value.comments.push(data);
     }
   };
 

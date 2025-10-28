@@ -12,6 +12,16 @@ const user = useSupabaseUser();
 const loading = ref(false);
 const listData = ref({ name: '', description: '' });
 
+watchEffect(() => {
+  if (props.initialData) {
+    listData.value.name = props.initialData.name;
+    listData.value.description = props.initialData.description || '';
+  } else {
+    listData.value.name = '';
+    listData.value.description = '';
+  }
+});
+
 const isEditMode = computed(() => !!props.initialData);
 
 async function handleSubmit() {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Period } from '~/types/app';
+import type { PeriodWithVisibility } from '~/types/app';
 
 const props = defineProps<{
-  period: Period;
+  period: PeriodWithVisibility;
   isOwner?: boolean;
 }>();
 const emit = defineEmits(['edit', 'delete']);

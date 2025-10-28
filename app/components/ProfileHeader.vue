@@ -48,7 +48,7 @@ onClickOutside(menu, () => isMenuOpen.value = false);
           <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
           <Icon v-else name="lucide:repeat" /> Seguir de Volta
         </button>
-        <button v-else-if="status === 'following' || 'mutual'" class="btn secondary" disabled>
+        <button v-else-if="status in(['following','mutual'])" class="btn secondary" disabled>
           <Icon name="lucide:user-check" /> Seguindo
         </button>
         <button v-else-if="status === 'request_sent'" class="btn secondary" disabled>
@@ -163,7 +163,7 @@ onClickOutside(menu, () => isMenuOpen.value = false);
   right: 0;
   top: calc(100% + .5rem);
   width: max-content;
-  padding: 0.5rem;
+  padding: .5rem;
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
@@ -172,15 +172,10 @@ onClickOutside(menu, () => isMenuOpen.value = false);
 }
 .dropdown-content button {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  justify-content: left;
   width: 100%;
-  padding: 0.5rem;
-  background: none;
-  border: none;
+  padding: .5rem;
   cursor: pointer;
-  text-align: left;
-  border-radius: calc(var(--radius) - 4px);
 }
 .dropdown-content button:hover {
   background-color: hsl(var(--muted));

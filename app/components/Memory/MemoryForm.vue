@@ -2,9 +2,9 @@
 import imageCompression from 'browser-image-compression';
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Memory, MemoryInsert, DatePrecision, MemoryFormData } from '~/types/app';
+import type { Memory, MemoryInsert, DatePrecision, MemoryFormData, UserList } from '~/types/app';
 
-const props = defineProps<{ initialData?: Memory | null }>();
+const props = defineProps<{ initialData?: Memory & { memory_list_visibility: { list_id: string }[] } | null }>();
 const emit = defineEmits(['close', 'success']);
 
 const client = useSupabaseClient<Database>();
@@ -13,6 +13,8 @@ const user = useSupabaseUser();
 const loading = ref(false);
 const datePrecision = ref<DatePrecision>('complete');
 const selectedFiles = ref<File[]>([]);
+const userLists = ref<UserList[]>([]);
+const selectedListIds = ref<string[]>([]);
 
 const memoryData = ref<MemoryFormData>({
   title: '',
@@ -21,6 +23,7 @@ const memoryData = ref<MemoryFormData>({
   description: '',
   visibility: 'private',
 });
+
 const dateParts = ref({
   complete: '',
   year: new Date().getFullYear().toString(),
@@ -39,6 +42,12 @@ const visibilityOptions = [
   { id: 'public', label: 'Público', icon: 'lucide:globe' },
 ];
 
+onMounted(async () => {
+  if (!user.value) return;
+  const { data } = await client.from('user_lists').select('*').eq('owner_id', user.value.sub);
+  userLists.value = data || [];
+});
+
 watchEffect(() => {
   if (props.initialData) {
     const data = props.initialData;
@@ -50,6 +59,7 @@ watchEffect(() => {
       visibility: data.visibility,
     };
     datePrecision.value = data.date_precision;
+    selectedListIds.value = data.memory_list_visibility?.map(item => item.list_id) || [];
     
     const date = new Date(`${data.date}T00:00:00`);
     if (datePrecision.value === 'complete') {
@@ -144,38 +154,50 @@ async function handleSubmit() {
     updated_at: new Date().toISOString(),
   };
 
-  if (isEditMode.value) {
-    const { error } = await client
-      .from('memories')
-      .update(dataToSubmit)
-      .eq('id', props.initialData!.id);
-    
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Memória atualizada com sucesso!');
-      emit('success');
-      emit('close');
-    }
-  } else {
-    const { error } = await client.from('memories').insert({
-      id: newMemoryId,
-      user_id: user.value.sub,
-      ...memoryData.value,
-      date: finalDate,
-      date_precision: datePrecision.value,
-      media_urls: mediaUrls.length > 0 ? mediaUrls : null,
-    } as MemoryInsert);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Memória criada com sucesso!');
-      emit('success');
-      emit('close');
-    }
-  }
+  try {
+    if (isEditMode.value) {
+      const memoryId = props.initialData!.id;
+      const { error: updateError } = await client
+        .from('memories')
+        .update(dataToSubmit)
+        .eq('id', memoryId);
+      
+      if (updateError) throw updateError;
 
-  loading.value = false;
+      await client.from('memory_list_visibility').delete().eq('memory_id', memoryId);
+
+      if (memoryData.value.visibility === 'lists' && selectedListIds.value.length > 0) {
+        const listLinks = selectedListIds.value.map(listId => ({ memory_id: memoryId, list_id: listId }));
+        const { error: listError } = await client.from('memory_list_visibility').insert(listLinks);
+        if (listError) throw listError;
+      }
+      toast.success('Memória atualizada com sucesso!');
+    } else {
+      const { data: newMemory, error: insertError } = await client
+        .from('memories')
+        .insert({ ...dataToSubmit, user_id: user.value.id })
+        .select('id').single();
+      
+      if (insertError) throw insertError;
+
+      if (newMemory && memoryData.value.visibility === 'lists' && selectedListIds.value.length > 0) {
+        const listLinks = selectedListIds.value.map(listId => ({ memory_id: newMemory.id, list_id: listId }));
+
+        const { error: listError } = await client
+          .from('memory_list_visibility')
+          .insert(listLinks);
+        
+        if (listError) throw listError;
+      }
+      toast.success('Memória criada com sucesso!');
+    }
+    emit('success');
+    emit('close');
+  } catch (error: any) {
+    toast.error(error.message);
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
@@ -268,6 +290,9 @@ async function handleSubmit() {
           <span>{{ option.label }}</span>
         </label>
       </div>
+    </div>
+    <div v-if="memoryData.visibility === 'lists'">
+      <ListSelector :lists="userLists" v-model="selectedListIds" />
     </div>
     <button class="btn primary" type="submit" :disabled="loading">
       <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>

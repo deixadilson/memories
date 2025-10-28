@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Memory, MemoryWithAuthor } from '~/types/app';
+import type { MemoryComplete } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -13,16 +13,16 @@ const user = useSupabaseUser();
 const loading = ref(true);
 const isModalOpen = ref(false);
 const isConfirmModalOpen = ref(false);
-const memories = ref<MemoryWithAuthor[]>([]);
-const editingMemory = ref<Memory | null>(null);
-const memoryToDelete = ref<Memory | null>(null);
+const memories = ref<MemoryComplete[]>([]);
+const editingMemory = ref<MemoryComplete | null>(null);
+const memoryToDelete = ref<MemoryComplete | null>(null);
 
 async function fetchMemories() {
   if (!user.value) return;
 
   const { data, error } = await client
     .from('memories')
-    .select('*, profiles(*)')
+    .select('*, profiles(*), memory_list_visibility(*)')
     .eq('user_id', user.value.sub)
     .order('date', { ascending: false });
   
@@ -34,17 +34,17 @@ async function fetchMemories() {
   loading.value = false;
 }
 
-function editMemory(memory: Memory) {
+function editMemory(memory: MemoryComplete) {
   editingMemory.value = memory;
   isModalOpen.value = true;
 }
 
-function promptDeleteMemory(memory: Memory) {
+function promptDeleteMemory(memory: MemoryComplete) {
   memoryToDelete.value = memory;
   isConfirmModalOpen.value = true;
 }
 
-async function deleteMemory(memory: Memory) {
+async function deleteMemory(memory: MemoryComplete) {
   if (!memoryToDelete.value) return;
   const { error } = await client.from('memories').delete().eq('id', memoryToDelete.value.id);
   

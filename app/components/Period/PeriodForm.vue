@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Period, PeriodInsert, PeriodFormData } from '~/types/app';
+import type { PeriodWithVisibility, PeriodInsert, PeriodFormData, UserList } from '~/types/app';
 
-const props = defineProps<{ initialData?: Period | null }>();
+const props = defineProps<{ initialData?: PeriodWithVisibility | null }>();
 const emit = defineEmits(['close', 'success']);
 
 const client = useSupabaseClient<Database>();
@@ -19,6 +19,9 @@ const periodData = ref<PeriodFormData>({
   description: '',
   visibility: 'public',
 });
+
+const userLists = ref<UserList[]>([]);
+const selectedListIds = ref<string[]>([]);
 
 const periodTypes = [
   { value: 'residence', label: 'Residência' },
@@ -36,6 +39,12 @@ const visibilityOptions = [
   { id: 'public', label: 'Público', icon: 'lucide:globe' },
 ];
 
+onMounted(async () => {
+  if (!user.value) return;
+  const { data } = await client.from('user_lists').select('*').eq('owner_id', user.value.sub);
+  userLists.value = data || [];
+});
+
 watchEffect(() => {
   if (props.initialData) {
     periodData.value = {
@@ -47,6 +56,7 @@ watchEffect(() => {
       description: props.initialData.description || '',
       visibility: props.initialData.visibility,
     };
+    selectedListIds.value = props.initialData.period_list_visibility?.map(item => item.list_id) || [];
   }
 });
 
@@ -62,34 +72,53 @@ async function handleSubmit() {
     updated_at: new Date().toISOString(),
   };
 
-  if (isEditMode.value) {
-    const { error } = await client
-      .from('periods')
-      .update(dataToSubmit)
-      .eq('id', props.initialData!.id);
-    
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Período atualizado com sucesso!');
-      emit('success');
-      emit('close');
-    }
-  } else {
-    const { error } = await client.from('periods').insert({
-      ...dataToSubmit,
-      user_id: user.value.sub,
-    } as PeriodInsert);
+  try {
+    if (isEditMode.value) {
+      const periodId = props.initialData!.id;
+      const { error: updateError } = await client
+        .from('periods')
+        .update(dataToSubmit)
+        .eq('id', periodId);
+      
+      if (updateError) throw updateError;
 
-    if (error) {
-      toast.error(error.message);
-    } else {
+      await client.from('period_list_visibility').delete().eq('period_id', periodId);
+
+      if (periodData.value.visibility === 'lists' && selectedListIds.value.length > 0) {
+        const listLinks = selectedListIds.value.map(listId => ({ period_id: periodId, list_id: listId }));
+        const { error: listError } = await client
+          .from('period_list_visibility')
+          .insert(listLinks);
+        
+        if (listError) throw listError;
+      }
+      toast.success('Período atualizado com sucesso!');
+  } else {
+      const { data: newPeriod, error: insertError } = await client
+        .from('periods')
+        .insert({ ...dataToSubmit, user_id: user.value.sub })
+        .select('id').single();
+      
+      if (insertError) throw insertError;
+
+      if (newPeriod && periodData.value.visibility === 'lists' && selectedListIds.value.length > 0) {
+        const listLinks = selectedListIds.value.map(listId => ({ period_id: newPeriod.id, list_id: listId }));
+
+        const { error: listError } = await client
+          .from('period_list_visibility')
+          .insert(listLinks);
+        
+        if (listError) throw listError;
+      }
       toast.success('Período criado com sucesso!');
-      emit('success');
-      emit('close');
     }
+    emit('success');
+    emit('close');
+  } catch (error: any) {
+    toast.error(error.message);
+  } finally {
+    loading.value = false;
   }
-  loading.value = false;
 }
 </script>
 
@@ -133,6 +162,9 @@ async function handleSubmit() {
           <span>{{ option.label }}</span>
         </label>
       </div>
+    </div>
+    <div v-if="periodData.visibility === 'lists'">
+      <ListSelector :lists="userLists" v-model="selectedListIds" />
     </div>
     <button class="btn primary" type="submit" :disabled="loading">
       <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>

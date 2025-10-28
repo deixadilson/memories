@@ -14,9 +14,8 @@ const emit = defineEmits(['action']);
 const searchQuery = ref('');
 
 const filteredUsers = computed(() => {
-  if (!searchQuery.value) {
-    return props.users;
-  }
+  if (!searchQuery.value) return props.users;
+  
   return props.users.filter(user =>
     user.username.toLowerCase().includes(searchQuery.value.toLowerCase())
   );

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+import type { MemoryListVisibility } from '~/types/app';
 const props = defineProps<{
   memory: {
     id: string;
@@ -12,6 +12,7 @@ const props = defineProps<{
     media_urls?: string[] | null;
     location?: string | null;
     people?: string[];
+    memory_list_visibility: MemoryListVisibility[];
   };
   isOwner?: boolean;
 }>();

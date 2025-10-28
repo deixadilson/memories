@@ -88,7 +88,7 @@ async function handleAction(otherUserId: string, action: 'follow' | 'unfollow' |
     let error: any;
     switch (action) {
       case 'follow':
-        ({ error } = await client.from('friendships').insert({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'accepted' }));
+        ({ error } = await client.from('friendships').insert({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'pending' }));
         if (error) throw error;
         relationships.value.push({ requester_id: loggedInUserId, receiver_id: otherUserId, status: 'pending', created_at: new Date().toISOString(), id: '', updated_at: null });
         toast.success('Enviada solicitação para seguir.');

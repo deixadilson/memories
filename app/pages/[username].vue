@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Profile, Period, MemoryWithAuthor, FriendshipStatus } from '~/types/app';
+import type { Profile, PeriodWithVisibility, MemoryComplete, FriendshipStatus } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -16,9 +16,9 @@ const loadingProfile = ref(true);
 const loadingMemories = ref(true);
 const loadingAction = ref(false);
 const profile = ref<Profile | null>(null);
-const periods = ref<Period[]>([]);
-const selectedPeriod = ref<Period | null>(null);
-const memoriesForPeriod = ref<MemoryWithAuthor[]>([]);
+const periods = ref<PeriodWithVisibility[]>([]);
+const selectedPeriod = ref<PeriodWithVisibility | null>(null);
+const memoriesForPeriod = ref<MemoryComplete[]>([]);
 const friendshipStatus = ref<FriendshipStatus | 'self'>('not_friends');
 const stats = ref({ memories: 0, followers: 0, following: 0 });
 
@@ -51,21 +51,24 @@ async function fetchData() {
 
     friendshipStatus.value = getFriendshipStatus(loggedInUser.value.sub, relationships || [], profileData.id);
   }
-
-  const [memoriesCount, followersCount, followingCount, periodsData] = await Promise.all([
+  
+  const [memoriesCount, followersCount, followingCount] = await Promise.all([
     client.from('memories').select('*', { count: 'exact', head: true }).eq('user_id', profileData.id).eq('visibility', 'public'),
     client.from('friendships').select('*', { count: 'exact', head: true }).eq('receiver_id', profileData.id).eq('status', 'accepted'),
-    client.from('friendships').select('*', { count: 'exact', head: true }).eq('requester_id', profileData.id).eq('status', 'accepted'),
-    client.from('periods').select('*').eq('user_id', profileData.id).eq('visibility', 'public').order('start_date', { ascending: false })
+    client.from('friendships').select('*', { count: 'exact', head: true }).eq('requester_id', profileData.id).eq('status', 'accepted')
   ]);
-
+  
   stats.value = {
     memories: memoriesCount?.count ?? 0,
     followers: followersCount?.count ?? 0,
     following: followingCount?.count ?? 0,
   };
   
-  periods.value = periodsData.data || [];
+  const { data: periodsData, error: periodsError } = await client
+    .rpc('get_visible_periods', { profile_id_param: profileData.id });
+  
+  if (periodsError) toast.error("Erro ao carregar períodos.");
+  periods.value = periodsData || [];
   loadingProfile.value = false;
 }
 
@@ -124,19 +127,25 @@ async function handleAction(action: 'follow' | 'unfollow' | 'cancel_request' | '
   }
 }
 
-async function selectPeriod(period: Period) {
+async function selectPeriod(period: PeriodWithVisibility) {
   selectedPeriod.value = period;
   memoriesForPeriod.value = [];
   viewState.value = 'period-details';
 
   loadingMemories.value = true;
-  const query = client.from('memories').select('*, profiles(*)')
-    .eq('user_id', profile.value!.id).eq('visibility', 'public')
-    .gte('date', period.start_date);
-  if (period.end_date) query.lte('date', period.end_date);
+  const { data: memoriesData, error: memoriesError } = await client
+    .rpc('get_visible_memories', {
+      profile_id_param: profile.value!.id,
+      start_date_filter: period.start_date,
+      end_date_filter: period.end_date || undefined,
+    });
   
-  const { data } = await query.order('date');
-  memoriesForPeriod.value = (data as MemoryWithAuthor[]) || [];
+    if (memoriesError) toast.error("Erro ao carregar memórias do período.");
+    memoriesForPeriod.value = (memoriesData || []).map(m => ({
+      ...m,
+      profiles: profile.value
+    })) as MemoryComplete[];
+
   loadingMemories.value = false;
 }
 

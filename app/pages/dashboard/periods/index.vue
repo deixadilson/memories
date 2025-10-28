@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Period } from '~/types/app';
+import type { PeriodWithVisibility } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -12,15 +12,15 @@ const router = useRouter();
 const loading = ref(true);
 const isModalOpen = ref(false);
 const isConfirmModalOpen = ref(false);
-const periods = ref<Period[]>([]);
-const editingPeriod = ref<Period | null>(null);
-const periodToDelete = ref<Period | null>(null);
+const periods = ref<PeriodWithVisibility[]>([]);
+const editingPeriod = ref<PeriodWithVisibility | null>(null);
+const periodToDelete = ref<PeriodWithVisibility | null>(null);
 
 async function fetchPeriods() {
   if (!user.value) return;
   const { data, error } = await client
     .from('periods')
-    .select('*')
+    .select('*, period_list_visibility(*)')
     .eq('user_id', user.value.sub)
     .order('start_date', { ascending: false });
   
@@ -32,17 +32,17 @@ async function fetchPeriods() {
   loading.value = false;
 }
 
-function editPeriod(period: Period) {
+function editPeriod(period: PeriodWithVisibility) {
   editingPeriod.value = period;
   isModalOpen.value = true;
 }
 
-function promptDeletePeriod(period: Period) {
+function promptDeletePeriod(period: PeriodWithVisibility) {
   periodToDelete.value = period;
   isConfirmModalOpen.value = true;
 }
 
-async function deletePeriod(period: Period) {
+async function deletePeriod(period: PeriodWithVisibility) {
   if (!periodToDelete.value) return;
   const { error } = await client.from('periods').delete().eq('id', periodToDelete.value.id);
   

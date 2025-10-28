@@ -173,6 +173,36 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_list_visibility: {
+        Row: {
+          list_id: string
+          memory_id: string
+        }
+        Insert: {
+          list_id: string
+          memory_id: string
+        }
+        Update: {
+          list_id?: string
+          memory_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_list_visibility_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "user_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memory_list_visibility_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           creator_id: string
@@ -207,6 +237,36 @@ export type Database = {
             columns: ["registered_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      period_list_visibility: {
+        Row: {
+          list_id: string
+          period_id: string
+        }
+        Insert: {
+          list_id: string
+          period_id: string
+        }
+        Update: {
+          list_id?: string
+          period_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "period_list_visibility_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "user_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "period_list_visibility_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "periods"
             referencedColumns: ["id"]
           },
         ]
@@ -356,6 +416,55 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_visible_memories: {
+        Args: {
+          end_date_filter?: string
+          profile_id_param: string
+          start_date_filter?: string
+        }
+        Returns: {
+          category: Database["public"]["Enums"]["memory_category"]
+          created_at: string | null
+          date: string
+          date_precision: Database["public"]["Enums"]["date_precision"]
+          description: string | null
+          id: string
+          location: string | null
+          media_urls: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          visibility: Database["public"]["Enums"]["visibility_type"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "memories"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_visible_periods: {
+        Args: { profile_id_param: string }
+        Returns: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          location: string | null
+          start_date: string
+          title: string
+          type: Database["public"]["Enums"]["period_type"]
+          updated_at: string | null
+          user_id: string
+          visibility: Database["public"]["Enums"]["visibility_type"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "periods"
           isOneToOne: false
           isSetofReturn: true
         }
