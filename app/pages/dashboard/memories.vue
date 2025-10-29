@@ -13,6 +13,8 @@ const user = useSupabaseUser();
 const loading = ref(true);
 const isModalOpen = ref(false);
 const isConfirmModalOpen = ref(false);
+const isTagModalOpen = ref(false);
+const isMidiaModalOpen = ref(false);
 const memories = ref<MemoryComplete[]>([]);
 const editingMemory = ref<MemoryComplete | null>(null);
 const memoryToDelete = ref<MemoryComplete | null>(null);
@@ -112,9 +114,16 @@ onMounted(fetchMemories);
     <Modal
       :is-open="isModalOpen"
       :title="editingMemory ? 'Editar Memória' : 'Criar Nova Memória'"
+      :is-top-modal="!isTagModalOpen || !isMidiaModalOpen"
       @close="closeModal"
     >
-      <MemoryForm :initial-data="editingMemory" @close="closeModal" @success="handleSuccess" />
+      <MemoryForm
+        :initial-data="editingMemory"
+        @close="closeModal"
+        @success="handleSuccess"
+        v-model:isMediaModalOpen="isMidiaModalOpen"
+        v-model:isTagModalOpen="isTagModalOpen"
+      />
     </Modal>
 
     <ConfirmModal

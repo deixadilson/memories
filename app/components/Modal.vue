@@ -4,12 +4,15 @@ import { onClickOutside } from '@vueuse/core';
 const props = defineProps<{
   isOpen: boolean;
   title: string;
+  isTopModal: boolean;
 }>();
 
 const emit = defineEmits(['close']);
 const modalContent = ref(null);
 
-onClickOutside(modalContent, () => emit('close'));
+onClickOutside(modalContent, () => {
+  if(!props.isTopModal) emit('close');
+});
 </script>
 
 <template>

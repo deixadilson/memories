@@ -3,6 +3,7 @@ import type { Database } from './supabase';
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Period = Database['public']['Tables']['periods']['Row'];
 export type Memory = Database['public']['Tables']['memories']['Row'];
+export type Person = Database['public']['Tables']['people']['Row'];
 export type UserList = Database['public']['Tables']['user_lists']['Row'];
 export type UserListMember = Database['public']['Tables']['user_list_members']['Row'];
 export type MemoryListVisibility = Database['public']['Tables']['memory_list_visibility']['Row'];
@@ -10,6 +11,7 @@ export type PeriodListVisibility = Database['public']['Tables']['period_list_vis
 export type Friendship = Database['public']['Tables']['friendships']['Row'];
 export type Like = Database['public']['Tables']['likes']['Row'];
 export type Comment = Database['public']['Tables']['comments']['Row'];
+export type MemoryUserTags = Database['public']['Tables']['memory_user_tags']['Row'];
 export type MemoryInsert = Database['public']['Tables']['memories']['Insert'];
 export type PeriodInsert = Database['public']['Tables']['periods']['Insert'];
 export type DatePrecision = Database['public']['Enums']['date_precision'];
@@ -27,6 +29,7 @@ export type MemoryWithAuthor = Memory & {
 export type MemoryComplete = Memory & {
   profiles: Profile | Profile[] | null;
   memory_list_visibility: MemoryListVisibility[];
+  memory_user_tags?: MemoryUserTags[];
 };
 export type PeriodWithVisibility = Period & {
   period_list_visibility?: PeriodListVisibility[];

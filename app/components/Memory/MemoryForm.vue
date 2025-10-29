@@ -2,19 +2,28 @@
 import imageCompression from 'browser-image-compression';
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Memory, MemoryInsert, DatePrecision, MemoryFormData, UserList } from '~/types/app';
+import type { MemoryComplete, MemoryInsert, DatePrecision, MemoryFormData, UserList, Profile, Person } from '~/types/app';
 
-const props = defineProps<{ initialData?: Memory & { memory_list_visibility: { list_id: string }[] } | null }>();
-const emit = defineEmits(['close', 'success']);
+const props = defineProps<{
+  initialData?: MemoryComplete | null;
+  isTagModalOpen: boolean;
+  isMediaModalOpen: boolean;
+}>();
+const emit = defineEmits(['close', 'success', 'update:isMediaModalOpen', 'update:isTagModalOpen']);
 
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 
 const loading = ref(false);
 const datePrecision = ref<DatePrecision>('complete');
-const selectedFiles = ref<File[]>([]);
-const userLists = ref<UserList[]>([]);
+const filesToUpload = ref<File[]>([]);
+const existingMediaUrls = ref<string[]>([]);
+const removedMediaUrls = ref<string[]>([]);
+const selectedPeopleIds = ref<string[]>([]);
 const selectedListIds = ref<string[]>([]);
+const following = ref<Profile[]>([]);
+const userLists = ref<UserList[]>([]);
+const people = ref<Person[]>([]);
 
 const memoryData = ref<MemoryFormData>({
   title: '',
@@ -44,8 +53,18 @@ const visibilityOptions = [
 
 onMounted(async () => {
   if (!user.value) return;
-  const { data } = await client.from('user_lists').select('*').eq('owner_id', user.value.sub);
-  userLists.value = data || [];
+  const { data: listData } = await client.from('user_lists').select('*').eq('owner_id', user.value.sub);
+  userLists.value = listData || [];
+  
+  const { data: followingData } = await client
+    .from('friendships')
+    .select('profiles!receiver_id(*)')
+    .eq('requester_id', user.value.sub)
+    .eq('status', 'accepted');
+  following.value = followingData?.map(f => f.profiles) || [];
+
+  const { data: peopleData } = await client.from('people').select('*').eq('creator_id', user.value.sub);
+  people.value = peopleData || [];
 });
 
 watchEffect(() => {
@@ -59,7 +78,6 @@ watchEffect(() => {
       visibility: data.visibility,
     };
     datePrecision.value = data.date_precision;
-    selectedListIds.value = data.memory_list_visibility?.map(item => item.list_id) || [];
     
     const date = new Date(`${data.date}T00:00:00`);
     if (datePrecision.value === 'complete') {
@@ -67,16 +85,19 @@ watchEffect(() => {
     }
     dateParts.value.year = date.getFullYear().toString();
     dateParts.value.month = date.getMonth().toString();
+    
+    existingMediaUrls.value = props.initialData.media_urls || [];
+    selectedPeopleIds.value = props.initialData.memory_user_tags?.map(tag => tag.person_id) || [];
+    selectedListIds.value = data.memory_list_visibility?.map(item => item.list_id) || [];
   }
 });
 
 const isEditMode = computed(() => !!props.initialData);
 
-function onFileChange(event: Event) {
-  const target = event.target as HTMLInputElement;
-  if (target.files) {
-    selectedFiles.value = Array.from(target.files);
-  }
+function handleMediaSave({ newFiles, keptUrls, removedUrls }: { newFiles: File[], keptUrls: string[], removedUrls: string[] }) {
+  filesToUpload.value = newFiles;
+  existingMediaUrls.value = keptUrls;
+  removedMediaUrls.value = removedUrls;
 }
 
 async function handleSubmit() {
@@ -104,100 +125,128 @@ async function handleSubmit() {
       finalDate = dateParts.value.complete;
       break;
   }
-
-  const newMemoryId = isEditMode.value ? props.initialData!.id : crypto.randomUUID();
-  let mediaUrls: string[] = isEditMode.value ? props.initialData!.media_urls || [] : [];
-
-  if (selectedFiles.value.length > 0) {
-    const compressionOptions = {
-      maxSizeMB: .5,
-      maxWidthOrHeight: 1040,
-      useWebWorker: true,
+ 
+  try {
+    let memoryId: string;
+    let finalMediaUrls: string[] = [];
+   
+    const dataToSubmit: Omit<MemoryInsert, 'user_id' | 'id'> = {
+      ...memoryData.value,
+      date: finalDate,
+      date_precision: datePrecision.value,
+      updated_at: new Date().toISOString(),
     };
 
-    const uploadPromises = selectedFiles.value.map(async (file) => {
-      let fileToUpload = file;
-
-      if (file.type.startsWith('image/')) {
-        try {
-          fileToUpload = await imageCompression(file, compressionOptions);
-        } catch (error) {
-          console.error('Falha ao comprimir imagem.', error);
-          toast.warning(`Não foi possível otimizar a imagem "${file.name}".`);
-        }
-      }
-      const fileExt = file.name.split('.').pop();
-      const uniqueFileName = `${Date.now()}${Math.floor(Math.random() * 100)}.${fileExt}`;
-      const filePath = `${user.value!.sub}/${newMemoryId}/${uniqueFileName}`;
-
-      return client.storage.from('memories-media').upload(filePath, fileToUpload);
-
-    });
-
-    const results = await Promise.all(uploadPromises);
-    const failedUploads = results.filter(res => res.error);
-    if (failedUploads.length > 0) {
-      toast.error(`Falha no upload de ${failedUploads.length} arquivo(s).`);
-      loading.value = false;
-      return;
-    }
-    
-    const newUrls = results.map(res => client.storage.from('memories-media').getPublicUrl(res.data!.path).data.publicUrl);
-    mediaUrls = [...mediaUrls, ...newUrls];
-  }
-
-  const dataToSubmit: Omit<MemoryInsert, 'user_id' | 'id'> = {
-    ...memoryData.value,
-    date: finalDate,
-    date_precision: datePrecision.value,
-    media_urls: mediaUrls.length > 0 ? mediaUrls : null,
-    updated_at: new Date().toISOString(),
-  };
-
-  try {
     if (isEditMode.value) {
-      const memoryId = props.initialData!.id;
-      const { error: updateError } = await client
-        .from('memories')
+      memoryId = props.initialData!.id;
+      finalMediaUrls = [...existingMediaUrls.value];
+      const { error } = await client.from('memories')
         .update(dataToSubmit)
         .eq('id', memoryId);
       
-      if (updateError) throw updateError;
-
-      await client.from('memory_list_visibility').delete().eq('memory_id', memoryId);
-
-      if (memoryData.value.visibility === 'lists' && selectedListIds.value.length > 0) {
-        const listLinks = selectedListIds.value.map(listId => ({ memory_id: memoryId, list_id: listId }));
-        const { error: listError } = await client.from('memory_list_visibility').insert(listLinks);
-        if (listError) throw listError;
-      }
-      toast.success('Memória atualizada com sucesso!');
+      if (error) throw error;
     } else {
-      const { data: newMemory, error: insertError } = await client
-        .from('memories')
-        .insert({ ...dataToSubmit, user_id: user.value.id })
-        .select('id').single();
+      const { data, error } = await client.from('memories')
+        .insert({ ...dataToSubmit, user_id: user.value.sub })
+        .select('id')
+        .single();
       
-      if (insertError) throw insertError;
-
-      if (newMemory && memoryData.value.visibility === 'lists' && selectedListIds.value.length > 0) {
-        const listLinks = selectedListIds.value.map(listId => ({ memory_id: newMemory.id, list_id: listId }));
-
-        const { error: listError } = await client
-          .from('memory_list_visibility')
-          .insert(listLinks);
-        
-        if (listError) throw listError;
-      }
-      toast.success('Memória criada com sucesso!');
+      if (error || !data) throw error || new Error("Não foi possível criar a memória.");
+      memoryId = data.id;
     }
+
+    const allTaggable = [
+      ...following.value.map(f => ({ id: f.id, type: 'user' })),
+      ...people.value.map(p => ({ id: p.id, type: 'person' })),
+    ];
+    const tagsToSubmit = selectedPeopleIds.value
+      .map(id => allTaggable.find(p => p.id === id))
+      .filter(Boolean) as { id: string; type: 'user' | 'person' }[];
+
+    const { error: rpcError } = await client.rpc('tag_people_in_memory', {
+      p_memory_id: memoryId,
+      tags: tagsToSubmit,
+    });
+    if (rpcError) throw rpcError;
+
+    await client.from('memory_list_visibility').delete().eq('memory_id', memoryId);
+    if (memoryData.value.visibility === 'lists' && selectedListIds.value.length > 0) {
+      const listLinks = selectedListIds.value.map(listId => ({ memory_id: memoryId, list_id: listId }));
+      await client.from('memory_list_visibility').insert(listLinks);
+    }
+
+    if (isEditMode.value && removedMediaUrls.value.length > 0) {
+      const { error: deleteError } = await client.functions.invoke('delete-memory-media', {
+        body: { memoryId: memoryId, urlsToDelete: removedMediaUrls.value },
+      });
+      if (deleteError) {
+        console.error('Falha ao excluir mídias antigas:', deleteError);
+      }
+    }
+
+    if (filesToUpload.value.length > 0) {
+      const compressionOptions = {
+        maxSizeMB: .5,
+        maxWidthOrHeight: 1040,
+        useWebWorker: true,
+      };
+
+      const uploadPromises = filesToUpload.value.map(async file => {
+        let fileToUpload = file;
+
+        if (file.type.startsWith('image/')) {
+          try {
+            fileToUpload = await imageCompression(file, compressionOptions);
+          } catch (error) {
+            console.error('Falha ao comprimir imagem.', error);
+            toast.warning(`Não foi possível otimizar a imagem "${file.name}".`);
+          }
+        }
+        const fileExt = file.name.split('.').pop();
+        const uniqueFileName = `${Date.now()}${Math.floor(Math.random() * 100)}.${fileExt}`;
+        const filePath = `${user.value!.sub}/${memoryId}/${uniqueFileName}.${fileExt}`;
+        return client.storage.from('memories-media').upload(filePath, file);
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const failedUploads = results.filter(res => res.error);
+      if (failedUploads.length > 0) {
+        throw new Error(`Falha no upload de ${failedUploads.length} arquivo(s).`);
+      }
+      
+      const newUrls = results.map(res => {
+        return client.storage.from('memories-media').getPublicUrl(res.data!.path).data.publicUrl;
+      });
+      finalMediaUrls.push(...newUrls);
+    }
+
+    const { error: finalUpdateError } = await client.from('memories')
+      .update({ media_urls: finalMediaUrls.length > 0 ? finalMediaUrls : null })
+      .eq('id', memoryId);
+    if (finalUpdateError) throw finalUpdateError;
+
+    toast.success(isEditMode.value ? 'Memória atualizada!' : 'Memória criada!');
     emit('success');
     emit('close');
+
   } catch (error: any) {
     toast.error(error.message);
   } finally {
     loading.value = false;
   }
+}
+
+function openMediaModal() {
+  emit('update:isMediaModalOpen', true);
+}
+function openTagModal() {
+  emit('update:isTagModalOpen', true);
+}
+function closeMediaModal() {
+  emit('update:isMediaModalOpen', false);
+}
+function closeTagModal() {
+  emit('update:isTagModalOpen', false);
 }
 </script>
 
@@ -270,16 +319,26 @@ async function handleSubmit() {
     </div>
 
     <div class="form-group">
-      <label for="media">Mídias</label>
-      <label for="media" class="file-input-label">
-        <Icon name="lucide:upload" />
-        <span>Selecionar arquivos</span>
-      </label>
-      <input id="media" type="file" accept="image/*" multiple @change="onFileChange" class="hidden" />
-      <div v-if="selectedFiles.length > 0" class="file-preview">
-        <span v-for="file in selectedFiles" :key="file.name">{{ file.name }}</span>
+      <label>Mídias</label>
+      <button type="button" @click="openMediaModal" class="btn secondary">
+        <Icon name="lucide:images" />
+        Gerenciar Mídias
+      </button>
+      <div v-if="filesToUpload.length > 0" class="media-preview">
+        {{ filesToUpload.length }} mídia(s) selecionada(s).
       </div>
     </div>
+
+    <div class="form-group">
+      <label>Pessoas</label>
+      <button type="button" @click="openTagModal" class="btn secondary">
+        <Icon name="lucide:at-sign" /> Marcar Pessoas
+      </button>
+      <div v-if="selectedPeopleIds.length > 0" class="tags-preview">
+        Marcado com {{ selectedPeopleIds.length }} pessoa(s).
+      </div>
+    </div>
+
     <div class="form-group">
       <label>Visibilidade</label>
       <div class="radio-group">
@@ -291,27 +350,55 @@ async function handleSubmit() {
         </label>
       </div>
     </div>
+
     <div v-if="memoryData.visibility === 'lists'">
       <ListSelector :lists="userLists" v-model="selectedListIds" />
     </div>
+
     <button class="btn primary" type="submit" :disabled="loading">
       <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
       {{ loading ? (isEditMode ? 'Salvando...' : 'Criando...') : (isEditMode ? 'Salvar Alterações' : 'Criar Memória') }}
     </button>
   </form>
+
+  <ManageMediaModal
+    :is-open="isMediaModalOpen"
+    :existing-media-urls="initialData?.media_urls || []"
+    @close="closeMediaModal"
+    @save="handleMediaSave"
+  />
+
+  <TagPeopleModal
+    :is-open="isTagModalOpen"
+    :following="following"
+    :people="people"
+    v-model="selectedPeopleIds"
+    @close="closeTagModal"
+  />
 </template>
 
 <style scoped>
-.form-group:not(:first-child) { margin-top: 1rem; }
-label { font-size: .875rem; font-weight: 500; }
-.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
-.btn { width: 100%; margin-top: 1.5rem; }
-
+.form-group:not(:first-child) {
+  margin-top: 1rem;
+}
+label {
+  font-size: .875rem; font-weight: 500;
+}
+.grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+  margin-top: 1rem;
+}
+.btn {
+  width: 100%; margin-top: 1.5rem;
+}
+.form-group .btn {
+  margin-top: .5rem;
+}
 .info-box {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: .5rem;
+  padding: .75rem;
   background-color: hsl(var(--muted));
   border-radius: calc(var(--radius) - 2px);
   color: hsl(var(--muted-foreground));
@@ -321,18 +408,22 @@ label { font-size: .875rem; font-weight: 500; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: .5rem;
+  padding: .75rem;
   border: 1px dashed hsl(var(--input));
   border-radius: calc(var(--radius) - 2px);
   cursor: pointer;
-  margin-top: 0.5rem;
+  margin-top: .5rem;
 }
 .file-input-label:hover {
   background-color: hsl(var(--muted));
 }
 .hidden { display: none; }
-.file-preview { margin-top: 0.5rem; font-size: 0.8rem; color: hsl(var(--muted-foreground)); }
+.media-preview, .tags-preview {
+  margin-top: .25rem;
+  font-size: .8rem;
+  color: hsl(var(--muted-foreground));
+}
 .file-preview span { display: block; }
 .radio-group {
   display: flex;
@@ -353,9 +444,8 @@ label { font-size: .875rem; font-weight: 500; }
 }
 .radio-label input[type="radio"] {
   position: absolute;
+  width: 0; height: 0;
   opacity: 0;
-  width: 0;
-  height: 0;
 }
 .custom-radio {
   display: flex;

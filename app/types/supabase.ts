@@ -203,6 +203,36 @@ export type Database = {
           },
         ]
       }
+      memory_user_tags: {
+        Row: {
+          memory_id: string
+          person_id: string
+        }
+        Insert: {
+          memory_id: string
+          person_id: string
+        }
+        Update: {
+          memory_id?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_user_tags_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memory_user_tags_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           creator_id: string
@@ -469,6 +499,13 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      tag_people_in_memory: {
+        Args: {
+          p_memory_id: string
+          tags: Database["public"]["CompositeTypes"]["tag_input"][]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       date_precision: "today" | "complete" | "month_year" | "year_only"
@@ -492,7 +529,10 @@ export type Database = {
       visibility_type: "private" | "friends" | "lists" | "public"
     }
     CompositeTypes: {
-      [_ in never]: never
+      tag_input: {
+        id: string | null
+        type: string | null
+      }
     }
   }
 }
