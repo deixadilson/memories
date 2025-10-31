@@ -117,6 +117,7 @@ onMounted(fetchPeriods);
 
   <Modal
     :is-open="isModalOpen"
+    :is-top-modal="true"
     :title="editingPeriod ? 'Editar Período' : 'Criar Novo Período'"
     @close="closeModal"
   >

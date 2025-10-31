@@ -51,7 +51,14 @@ const usersWithStatus = computed(() => {
 });
 
 const following = computed(() => usersWithStatus.value.filter(u => u.status === 'following' || u.status === 'mutual'));
-const followers = computed(() => usersWithStatus.value.filter(u => u.status === 'follower_only' || u.status === 'request_received'));
+const followers = computed(() => {
+  const followerIds = new Set(
+    relationships.value
+      .filter(f => f.receiver_id === user.value?.sub && (f.status === 'accepted'))
+      .map(f => f.requester_id)
+  );
+  return usersWithStatus.value.filter(u => followerIds.has(u.id));
+});
 
 const activeList = computed(() => {
   switch (activeTab.value) {
@@ -176,9 +183,9 @@ function handleSuccess() { fetchData(); }
         @action="handleAction"
       />
     </div>
-    <UserLists v-if="activeTab === 'lists'" :followers="followers" />
+    <Lists v-if="activeTab === 'lists'" :followers="followers" />
 
-    <Modal :is-open="isModalOpen" title="Adicionar Nova Pessoa" @close="isModalOpen = false">
+    <Modal :is-open="isModalOpen" :is-top-modal="true" title="Adicionar Nova Pessoa" @close="isModalOpen = false">
       <PersonForm @close="isModalOpen = false" @success="handleSuccess" />
     </Modal>
   </div>

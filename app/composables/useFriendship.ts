@@ -12,6 +12,9 @@ export const useFriendship = () => {
     if (iFollowThem?.status === 'blocked') return 'blocked';
     if (theyFollowMe?.status === 'blocked') return 'not_friends';
 
+    if (iFollowThem?.status === 'pending') return 'request_sent';
+    if (theyFollowMe?.status === 'pending') return 'request_received';
+
     const isFollowing = iFollowThem?.status === 'accepted';
     const isFollower = theyFollowMe?.status === 'accepted';
 
@@ -19,8 +22,6 @@ export const useFriendship = () => {
     if (isFollowing) return 'following';
     if (isFollower) return 'follower_only';
 
-    if (iFollowThem?.status === 'pending') return 'request_sent';
-    if (theyFollowMe?.status === 'pending') return 'request_received';
     
     return 'not_friends';
   };

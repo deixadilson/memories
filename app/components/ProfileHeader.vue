@@ -29,7 +29,8 @@ onClickOutside(menu, () => isMenuOpen.value = false);
       </div>
     </div>
     <div class="info-container">
-      <h1>{{ profile.username }}</h1>
+      <h1 class="display-name">{{ profile.full_name || profile.username }}</h1>
+      <p v-if="profile.full_name" class="username-handle">@{{ profile.username }}</p>
       <div class="stats">
         <div class="stat-item"><strong>{{ stats.memories }}</strong> Memórias</div>
         <div class="stat-item"><strong>{{ stats.followers }}</strong> Seguidores</div>
@@ -48,7 +49,7 @@ onClickOutside(menu, () => isMenuOpen.value = false);
           <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
           <Icon v-else name="lucide:repeat" /> Seguir de Volta
         </button>
-        <button v-else-if="status in(['following','mutual'])" class="btn secondary" disabled>
+        <button v-else-if="status === 'following' || status === 'mutual'" class="btn secondary" disabled>
           <Icon name="lucide:user-check" /> Seguindo
         </button>
         <button v-else-if="status === 'request_sent'" class="btn secondary" disabled>
@@ -73,7 +74,7 @@ onClickOutside(menu, () => isMenuOpen.value = false);
             <Icon name="lucide:more-vertical" />
           </button>
           <div v-if="isMenuOpen" class="dropdown-content">
-            <button v-if="status === 'following'" @click="emit('action', 'unfollow'); isMenuOpen = false;">
+            <button v-if="status === 'following' || status === 'mutual'" @click="emit('action', 'unfollow'); isMenuOpen = false;">
               <Icon name="lucide:user-minus" /> Deixar de seguir
             </button>
             <button v-if="status === 'request_sent'" @click="emit('action', 'cancel_request'); isMenuOpen = false;">
@@ -118,7 +119,15 @@ onClickOutside(menu, () => isMenuOpen.value = false);
 .info-container {
   justify-items: center;
 }
-.info-container h1 { font-size: 2rem; font-weight: 700; }
+.display-name {
+  font-size: 2rem;
+  font-weight: 700;
+}
+.username-handle {
+  font-size: 1.125rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: -.25rem;
+}
 .stats {
   display: flex;
   gap: 1.5rem;

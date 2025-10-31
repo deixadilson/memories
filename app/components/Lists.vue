@@ -118,7 +118,7 @@ function closeConfirmModal() {
     
     <div v-else-if="lists.length > 0">
       <div class="lists-grid">
-        <UserListCard
+        <ListCard
           v-for="list in lists"
           :key="list.id"
           :list="list"
@@ -148,10 +148,11 @@ function closeConfirmModal() {
 
     <Modal
       :is-open="isModalOpen"
+      :is-top-modal="true"
       :title="editingList ? 'Editar Lista' : 'Criar Nova Lista'"
       @close="closeModal"
     >
-      <UserListForm
+      <ListForm
         :initial-data="editingList"
         @close="closeModal"
         @success="handleSuccess"
@@ -189,7 +190,7 @@ function closeConfirmModal() {
 .footer {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 2rem;
+  margin-top: 2rem;
 }
 
 

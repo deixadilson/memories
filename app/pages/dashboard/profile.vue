@@ -14,6 +14,7 @@ const uploading = ref(false);
 
 const form = ref({
   username: '',
+  full_name: '',
   avatar_url: '',
   date_of_birth: '',
   biography: '',
@@ -68,6 +69,7 @@ async function handleUpdateProfile() {
     const { error } = await client
       .from('profiles')
       .update({
+        full_name: form.value.full_name,
         date_of_birth: form.value.date_of_birth || null,
         biography: form.value.biography,
         updated_at: new Date().toISOString(),
@@ -87,6 +89,7 @@ async function handleUpdateProfile() {
 watch(profile, (newProfile) => {
   if (newProfile) {
     form.value.username = newProfile.username || '';
+    form.value.full_name = newProfile.full_name || '';
     form.value.avatar_url = newProfile.avatar_url || '';
     form.value.date_of_birth = newProfile.date_of_birth || '';
     form.value.biography = newProfile.biography || '';
@@ -133,6 +136,10 @@ watch(profile, (newProfile) => {
           <div class="form-group">
             <label for="username">Nome de usuário</label>
             <input id="username" v-model="form.username" disabled type="text"/>
+          </div>
+          <div class="form-group">
+            <label for="full-name">Nome Completo</label>
+            <input id="full-name" v-model="form.full_name" type="text" placeholder="Seu nome e sobrenome" />
           </div>
           <div class="form-group">
             <label for="dob">Data de Nascimento</label>

@@ -32,15 +32,22 @@ onClickOutside(menu, () => isMenuOpen.value = false);
       </div>
       <div>
         <NuxtLink :to="`/${user.username}`" class="username-link">
-          <p class="username">{{ user.username }}</p>
+          <p class="display-name">{{ user.full_name || user.username }}</p>
         </NuxtLink>
-        <p v-if="status in(['follower_only','mutual'])" class="status-text">Segue você</p>
+        <p v-if="user.full_name" class="username-handle">@{{ user.username }}</p>
+        <p v-if="status === 'following' || status === 'mutual'" class="status-text">Segue você</p>
         <p v-if="status === 'blocked'" class="status-text">Bloqueado</p>
       </div>
     </div>
     <div class="actions-container">
       <div class="main-action">
-        <button v-if="status === 'not_friends'" @click="emit('action', 'follow')" class="btn primary" :disabled="loading">
+        <button v-if="status === 'request_sent'" class="btn secondary" disabled>
+          <Icon name="lucide:clock"/> Solicitado
+        </button>
+        <button v-else-if="status === 'following' || status === 'mutual'" class="btn secondary" disabled>
+          <Icon name="lucide:user-check" /> Seguindo
+        </button>
+        <button v-else-if="status === 'not_friends'" @click="emit('action', 'follow')" class="btn primary" :disabled="loading">
           <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
           <Icon v-else name="lucide:user-plus" /> Seguir
         </button>
@@ -62,19 +69,13 @@ onClickOutside(menu, () => isMenuOpen.value = false);
           <Icon v-if="loading" name="lucide:loader-circle" class="spinner"/>
           <Icon v-else name="lucide:circle-off" /> Desbloquear
         </button>
-        <button v-else-if="status === 'request_sent'" class="btn secondary" disabled>
-          <Icon name="lucide:clock"/> Solicitado
-        </button>
-        <button v-else-if="status === 'following'" class="btn secondary" disabled>
-          <Icon name="lucide:user-check" /> Seguindo
-        </button>
       </div>
       <div class="more-options" ref="menu">
         <button v-if="status !== 'blocked'" @click="isMenuOpen = !isMenuOpen" class="menu-btn" title="Mais opções">
           <Icon name="lucide:more-vertical" />
         </button>
         <div v-if="isMenuOpen" class="dropdown-content">
-          <button v-if="status === 'following'" @click="emit('action', 'unfollow'); isMenuOpen = false;">
+          <button v-if="status === 'following' || status === 'mutual'" @click="emit('action', 'unfollow'); isMenuOpen = false;">
             <Icon name="lucide:user-minus" /> Deixar de seguir
           </button>
           <button v-if="status === 'request_sent'" @click="emit('action', 'cancel_request'); isMenuOpen = false;">
@@ -130,8 +131,14 @@ onClickOutside(menu, () => isMenuOpen.value = false);
   font-weight: 600;
   font-size: 1rem;
 }
-.username {
-  font-weight: 500;
+.display-name {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+.username-handle {
+  font-size: .8rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1;
 }
 .username-link {
   text-decoration: none;

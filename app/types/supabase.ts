@@ -349,6 +349,7 @@ export type Database = {
           biography: string | null
           created_at: string | null
           date_of_birth: string | null
+          full_name: string | null
           id: string
           updated_at: string | null
           username: string
@@ -358,6 +359,7 @@ export type Database = {
           biography?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          full_name?: string | null
           id: string
           updated_at?: string | null
           username: string
@@ -367,6 +369,7 @@ export type Database = {
           biography?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          full_name?: string | null
           id?: string
           updated_at?: string | null
           username?: string
@@ -432,6 +435,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_visible_memories: {
+        Args: { profile_id_param: string }
+        Returns: number
+      }
       get_profile_by_username: {
         Args: { username_text: string }
         Returns: {
@@ -439,6 +446,7 @@ export type Database = {
           biography: string | null
           created_at: string | null
           date_of_birth: string | null
+          full_name: string | null
           id: string
           updated_at: string | null
           username: string

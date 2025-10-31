@@ -53,13 +53,13 @@ async function fetchData() {
   }
   
   const [memoriesCount, followersCount, followingCount] = await Promise.all([
-    client.from('memories').select('*', { count: 'exact', head: true }).eq('user_id', profileData.id).eq('visibility', 'public'),
+    client.rpc('count_visible_memories', { profile_id_param: profileData.id }),
     client.from('friendships').select('*', { count: 'exact', head: true }).eq('receiver_id', profileData.id).eq('status', 'accepted'),
     client.from('friendships').select('*', { count: 'exact', head: true }).eq('requester_id', profileData.id).eq('status', 'accepted')
   ]);
   
   stats.value = {
-    memories: memoriesCount?.count ?? 0,
+    memories: memoriesCount.data ?? 0,
     followers: followersCount?.count ?? 0,
     following: followingCount?.count ?? 0,
   };

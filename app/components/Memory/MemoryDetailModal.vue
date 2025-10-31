@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useGesture } from '@vueuse/gesture';
 import type { MemoryWithAuthor, CommentWithProfile  } from '~/types/app';
 
 const props = defineProps<{
@@ -13,6 +14,16 @@ const emit = defineEmits(['close', 'navigate', 'like', 'comment']);
 const user = useSupabaseUser();
 const commentInput = ref<HTMLTextAreaElement | null>(null);
 const newCommentContent = ref('');
+const currentImageIndex = ref(0);
+const imageElement = ref<HTMLElement | null>(null);
+const detailsElement = ref<HTMLElement | null>(null);
+const slideDirection = ref('slide-next');
+
+const totalImages = computed(() => props.memory?.media_urls?.length || 0);
+const currentImageUrl = computed(() => props.memory?.media_urls?.[currentImageIndex.value]);
+
+const isTextOnly = computed(() => !props.memory?.media_urls || props.memory.media_urls.length === 0);
+const isShortText = computed(() => (props.memory?.description?.length ?? 0) < 150);
 
 const userHasLiked = computed(() => {
   if (!user.value || !props.likes) return false;
@@ -42,18 +53,50 @@ const formattedDate = computed(() => {
   }
 });
 
-const isTextOnly = computed(() => !props.memory?.media_urls || props.memory.media_urls.length === 0);
-const isShortText = computed(() => (props.memory?.description?.length ?? 0) < 150);
-
-function submitComment() {
-  if (!newCommentContent.value.trim()) return;
-  emit('comment', newCommentContent.value);
-  newCommentContent.value = '';
+function nextImage() {
+  if (currentImageIndex.value < totalImages.value - 1) {
+    slideDirection.value = 'slide-next';
+    currentImageIndex.value++;
+  }
+}
+function prevImage() {
+  if (currentImageIndex.value > 0) {
+    slideDirection.value = 'slide-prev';
+    currentImageIndex.value--;
+  }
 }
 
-function focusCommentInput() {
-  commentInput.value?.focus();
-}
+const imageDragHandler = ({ swipe: [swipeX] }: { swipe: [number, number] }) => {
+  if (swipeX === -1) nextImage();
+  if (swipeX === 1) prevImage();
+};
+
+const detailsDragHandler = ({ swipe: [swipeX] }: { swipe: [number, number] }) => {
+  if (swipeX !== 0) {
+    if (swipeX === -1) {
+      if (totalImages.value > 1 && currentImageIndex.value < totalImages.value - 1) {
+        nextImage();
+      } else {
+        emit('navigate', 'next');
+      }
+    } else if (swipeX === 1) {
+      if (totalImages.value > 1 && currentImageIndex.value > 0) {
+        prevImage();
+      } else {
+        emit('navigate', 'prev');
+      }
+    }
+  }
+};
+
+watchEffect(() => {
+  if (imageElement.value) {
+    useGesture({ onDrag: imageDragHandler }, { domTarget: imageElement, eventOptions: { passive: true } });
+  }
+  if (detailsElement.value) {
+    useGesture({ onDrag: detailsDragHandler }, { domTarget: detailsElement, eventOptions: { passive: true } });
+  }
+});
 </script>
 
 <template>
@@ -61,7 +104,7 @@ function focusCommentInput() {
     <Transition name="fade">
       <div v-if="isOpen && memory" class="modal-overlay" @click.self="emit('close')">
         <div class="modal-content">
-          <div class="media-column">
+          <div ref="imageElement" class="media-column">
             <template v-if="isTextOnly">
               <div class="text-media-container">
                 <div class="meta">
@@ -71,10 +114,38 @@ function focusCommentInput() {
                 <p class="text-content" :class="{ 'is-short': isShortText }">{{ memory.description }}</p>
               </div>
             </template>
-            <img v-else :src="memory.media_urls![0]" :alt="memory.title" class="main-image"/>
+            <template v-else>
+              <div class="image-slider-wrapper">
+                <Transition :name="slideDirection">
+                  <img
+                    :key="currentImageIndex"
+                    :src="currentImageUrl"
+                    :alt="memory.title"
+                    class="main-image"
+                  />
+                </Transition>
+              </div>
+              <div v-if="totalImages > 1" class="carousel-nav">
+                <button @click.stop="prevImage" :disabled="currentImageIndex === 0" class="carousel-btn prev">
+                  <Icon name="lucide:chevron-left" />
+                </button>
+                <button @click.stop="nextImage" :disabled="currentImageIndex === totalImages - 1" class="carousel-btn next">
+                  <Icon name="lucide:chevron-right" />
+                </button>
+              </div>
+              <div v-if="totalImages > 1" class="carousel-indicators">
+                <button
+                  v-for="(_, index) in memory.media_urls"
+                  :key="index"
+                  @click.stop="currentImageIndex = index"
+                  class="indicator-dot"
+                  :class="{ active: index === currentImageIndex }"
+                ></button>
+              </div>
+            </template>
           </div>
 
-          <div class="details-column">
+          <div ref="detailsElement" class="details-column">
             <header>
               <h2>{{ memory.title }}</h2>
             </header>
@@ -126,8 +197,8 @@ function focusCommentInput() {
           <button @click="emit('close')" class="close-btn"><Icon name="lucide:x" /></button>
         </div>
         
-        <button @click="emit('navigate', 'prev')" class="nav-btn prev"><Icon name="lucide:chevron-left" /></button>
-        <button @click="emit('navigate', 'next')" class="nav-btn next"><Icon name="lucide:chevron-right" /></button>
+        <button @click="emit('navigate', 'prev')" class="nav-btn prev desktop-only"><Icon name="lucide:chevron-left" /></button>
+        <button @click="emit('navigate', 'next')" class="nav-btn next desktop-only"><Icon name="lucide:chevron-right" /></button>
       </div>
     </Transition>
   </Teleport>
@@ -136,10 +207,7 @@ function focusCommentInput() {
 <style scoped>
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
@@ -149,7 +217,7 @@ function focusCommentInput() {
 }
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity .3s ease;
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -178,9 +246,7 @@ function focusCommentInput() {
 }
 .media-column {
   background-color: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   overflow: hidden;
 }
 .details-column {
@@ -189,10 +255,80 @@ function focusCommentInput() {
   padding: 1.5rem;
   overflow-y: auto;
 }
+.image-slider-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .main-image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.carousel-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+.carousel-btn {
+  pointer-events: all;
+  background-color: hsla(0, 0%, 100%, 0.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.2);
+  border-radius: 50%;
+  height: 2.5rem;
+  padding: .5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.carousel-btn:hover:not(:disabled) {
+  background-color: hsla(0, 0%, 100%, 0.2);
+}
+.carousel-btn:disabled {
+  opacity: 0;
+  cursor: auto;
+}
+.carousel-btn .iconify {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.carousel-indicators {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+}
+.indicator-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background-color: hsla(0, 0%, 100%, 0.4);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.indicator-dot.active {
+  background-color: hsla(0, 0%, 100%, 0.9);
+  transform: scale(1.1);
 }
 .text-media-container {
   width: 100%;
@@ -369,6 +505,38 @@ function focusCommentInput() {
   right: 1.5rem;
   transform: translateY(-50%);
 }
+.slide-next-enter-active,
+.slide-next-leave-active,
+.slide-prev-enter-active,
+.slide-prev-leave-active {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-next-enter-from {
+  transform: translateX(100%);
+}
+.slide-next-leave-to {
+  transform: translateX(-100%);
+}
+.slide-prev-enter-from {
+  transform: translateX(-100%);
+}
+.slide-prev-leave-to {
+  transform: translateX(100%);
+}
+
+@media (min-width: 901px) {
+  .carousel-nav {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+  }
+  .desktop-only {
+    display: flex;
+  }
+}
 
 @media (max-width: 900px) {
   .modal-overlay {
@@ -386,7 +554,9 @@ function focusCommentInput() {
     border-radius: var(--radius);
   }
   .media-column {
-    max-height: 800px;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    max-height: 70vh;
     border-radius: var(--radius) var(--radius) 0 0;
   }
   .details-column {
@@ -412,7 +582,11 @@ function focusCommentInput() {
     position: fixed;
     background-color: hsl(var(--background) / .5);
     top: 1rem;
-    right: 2rem;
+    right: 1rem;
+    z-index: 1001;
+  }
+  .desktop-only {
+    display: none;
   }
 }
 </style>

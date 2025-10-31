@@ -39,7 +39,7 @@ async function toggleMembership(follower: FollowerWithMembership) {
 </script>
 
 <template>
-  <Modal :is-open="isOpen" :title="`Gerenciar Membros: ${list?.name}`" @close="emit('close')">
+  <Modal :is-open="isOpen" :is-top-modal="true" :title="`Gerenciar Membros: ${list?.name}`" @close="emit('close')">
     <div class="modal-body" v-if="list">
       <div v-if="followers.length > 0" class="followers-list">
         <div v-for="follower in followers" :key="follower.id" class="follower-item">

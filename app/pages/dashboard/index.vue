@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { MemoryWithAuthor } from '~/types/app';
+import type { MemoryComplete } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -12,7 +12,9 @@ const { open: openMemoryModal } = useMemoryModal();
 
 const loading = ref(true);
 const isModalOpen = ref(false);
-const recentMemories = ref<MemoryWithAuthor[]>([]);
+const isTagModalOpen = ref(false);
+const isMidiaModalOpen = ref(false);
+const recentMemories = ref<MemoryComplete[]>([]);
 const counts = ref({
   memories: 0,
   periods: 0,
@@ -41,7 +43,7 @@ async function fetchData() {
     counts.value.memories = memoriesCountRes.count ?? 0;
     counts.value.periods = periodsCountRes.count ?? 0;
     counts.value.people = peopleCountRes.count ?? 0;
-    recentMemories.value = recentMemoriesRes.data as MemoryWithAuthor[];
+    recentMemories.value = recentMemoriesRes.data as MemoryComplete[];
   }
 
   loading.value = false;
@@ -154,10 +156,16 @@ onMounted(fetchData);
 
     <Modal
       :is-open="isModalOpen"
+      :is-top-modal="true"
       title="Criar Nova Memória"
       @close="isModalOpen = false"
     >
-      <MemoryForm @close="isModalOpen = false" @success="handleSuccess"/>
+      <MemoryForm
+        @close="isModalOpen = false"
+        @success="handleSuccess"
+        v-model:isMediaModalOpen="isMidiaModalOpen"
+        v-model:isTagModalOpen="isTagModalOpen"
+      />
     </Modal>
   </div>
 </template>
