@@ -44,9 +44,10 @@ watch(user, (newUser) => {
     <MemoryDetailModal
       :is-open="state.isOpen"
       :memory="state.memory"
-      :likes="state.likes"
       :comments="state.comments"
+      :likes="state.likes"
       :liking="state.liking"
+      :navigation-direction="state.navigationDirection"
       @close="close"
       @navigate="navigate"
       @like="toggleLike"

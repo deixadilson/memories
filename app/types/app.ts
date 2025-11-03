@@ -45,6 +45,7 @@ export type UserModalState = SelectedMemory & {
   currentIndex: number;
   liking: boolean;
   list: MemoryComplete[];
+  navigationDirection: 'navigate-next' | 'navigate-prev';
 };
 
 export interface UserWithStatus extends Profile { status: FriendshipStatus; }

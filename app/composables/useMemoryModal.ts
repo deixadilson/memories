@@ -11,6 +11,7 @@ export const useMemoryModal = () => {
     currentIndex: -1,
     liking: false,
     list: [],
+    navigationDirection: 'navigate-next',
   }));
 
   const client = useSupabaseClient<Database>();
@@ -48,6 +49,8 @@ export const useMemoryModal = () => {
   };
 
   const navigate = (direction: 'prev' | 'next') => {
+    state.value.navigationDirection = direction === 'next' ? 'navigate-next' : 'navigate-prev';
+
     const newIndex = direction === 'prev' ? state.value.currentIndex - 1 : state.value.currentIndex + 1;
     const nextMemory = state.value.list[newIndex];
     if (nextMemory) {

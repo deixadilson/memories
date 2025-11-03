@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { useGesture } from '@vueuse/gesture';
 import type { MemoryWithAuthor, CommentWithProfile  } from '~/types/app';
 
 const props = defineProps<{
-  isOpen: boolean;
-  liking: boolean;
   memory: MemoryWithAuthor | null;
-  likes: any[];
   comments: CommentWithProfile[];
+  isOpen: boolean;
+  likes: any[];
+  liking: boolean;
+  navigationDirection: 'navigate-next' | 'navigate-prev';
 }>();
 
 const emit = defineEmits(['close', 'navigate', 'like', 'comment']);
 const user = useSupabaseUser();
+
 const commentInput = ref<HTMLTextAreaElement | null>(null);
 const newCommentContent = ref('');
 const currentImageIndex = ref(0);
-const imageElement = ref<HTMLElement | null>(null);
-const detailsElement = ref<HTMLElement | null>(null);
 const slideDirection = ref('slide-next');
+const startX = ref(0);
 
 const totalImages = computed(() => props.memory?.media_urls?.length || 0);
 const currentImageUrl = computed(() => props.memory?.media_urls?.[currentImageIndex.value]);
@@ -66,137 +66,139 @@ function prevImage() {
   }
 }
 
-const imageDragHandler = ({ swipe: [swipeX] }: { swipe: [number, number] }) => {
-  if (swipeX === -1) nextImage();
-  if (swipeX === 1) prevImage();
-};
+const startTouch = (e: TouchEvent) => {
+  if(!e.touches[0]) return;
+  const touch = e.touches[0];
+  startX.value = touch.clientX;
+}
 
-const detailsDragHandler = ({ swipe: [swipeX] }: { swipe: [number, number] }) => {
-  if (swipeX !== 0) {
-    if (swipeX === -1) {
-      if (totalImages.value > 1 && currentImageIndex.value < totalImages.value - 1) {
-        nextImage();
-      } else {
-        emit('navigate', 'next');
-      }
-    } else if (swipeX === 1) {
-      if (totalImages.value > 1 && currentImageIndex.value > 0) {
-        prevImage();
-      } else {
-        emit('navigate', 'prev');
-      }
-    }
-  }
-};
+const endImgTouch = (e: TouchEvent) => {
+  if(!e.changedTouches[0]) return;
+  const touch = e.changedTouches[0];
+  const diffX = touch.clientX - startX.value;
 
-watchEffect(() => {
-  if (imageElement.value) {
-    useGesture({ onDrag: imageDragHandler }, { domTarget: imageElement, eventOptions: { passive: true } });
+  if (diffX < -30) {
+    if (currentImageIndex.value < totalImages.value - 1) nextImage();
+    else emit('navigate', 'next');
   }
-  if (detailsElement.value) {
-    useGesture({ onDrag: detailsDragHandler }, { domTarget: detailsElement, eventOptions: { passive: true } });
+  else if (diffX > 30) {
+    if (currentImageIndex.value > 0) prevImage();
+    else emit('navigate', 'prev');
   }
-});
+}
+
+const endDetailsTouch = (e: TouchEvent) => {
+  if(!e.changedTouches[0]) return;
+  const touch = e.changedTouches[0];
+  const diffX = touch.clientX - startX.value;
+
+  if (diffX > 30) emit('navigate', 'prev');
+  else if (diffX < -30) emit('navigate', 'next');
+}
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="isOpen && memory" class="modal-overlay" @click.self="emit('close')">
-        <div class="modal-content">
-          <div ref="imageElement" class="media-column">
-            <template v-if="isTextOnly">
-              <div class="text-media-container">
-                <div class="meta">
-                  <span v-if="memory.location"><Icon name="lucide:map-pin" /> {{ memory.location }}</span>
-                  <span><Icon name="lucide:calendar" /> {{ formattedDate }}</span>
+        <div class="transition-wrapper">
+          <Transition :name="navigationDirection" mode="out-in">
+            <div class="modal-content" :key="memory.id">
+              <div @touchstart="startTouch" @touchend="endImgTouch" class="media-column">
+                <template v-if="isTextOnly">
+                  <div class="text-media-container">
+                    <div class="meta">
+                      <span v-if="memory.location"><Icon name="lucide:map-pin" /> {{ memory.location }}</span>
+                      <span><Icon name="lucide:calendar" /> {{ formattedDate }}</span>
+                    </div>
+                    <p class="text-content" :class="{ 'is-short': isShortText }">{{ memory.description }}</p>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="image-slider-wrapper">
+                    <Transition :name="slideDirection">
+                      <img
+                        :key="currentImageIndex"
+                        :src="currentImageUrl"
+                        :alt="memory.title"
+                        draggable="false"
+                        class="main-image"
+                      />
+                    </Transition>
+                  </div>
+                  <div v-if="totalImages > 1" class="carousel-nav">
+                    <button @click.stop="prevImage" :disabled="currentImageIndex === 0" class="carousel-btn prev">
+                      <Icon name="lucide:chevron-left" />
+                    </button>
+                    <button @click.stop="nextImage" :disabled="currentImageIndex === totalImages - 1" class="carousel-btn next">
+                      <Icon name="lucide:chevron-right" />
+                    </button>
+                  </div>
+                  <div v-if="totalImages > 1" class="carousel-indicators">
+                    <button
+                      v-for="(_, index) in memory.media_urls"
+                      :key="index"
+                      @click.stop="currentImageIndex = index"
+                      class="indicator-dot"
+                      :class="{ active: index === currentImageIndex }"
+                    ></button>
+                  </div>
+                </template>
+              </div>
+
+              <div @touchstart="startTouch" @touchend="endDetailsTouch" class="details-column">
+                <header>
+                  <h2>{{ memory.title }}</h2>
+                </header>
+                <div class="meta-and-desc" v-if="!isTextOnly">
+                  <div class="meta">
+                    <span><Icon name="lucide:calendar" /> {{ formattedDate }}</span>
+                    <span v-if="memory.location"><Icon name="lucide:map-pin" /> {{ memory.location }}</span>
+                  </div>
+                  <p class="description">{{ memory.description }}</p>
                 </div>
-                <p class="text-content" :class="{ 'is-short': isShortText }">{{ memory.description }}</p>
-              </div>
-            </template>
-            <template v-else>
-              <div class="image-slider-wrapper">
-                <Transition :name="slideDirection">
-                  <img
-                    :key="currentImageIndex"
-                    :src="currentImageUrl"
-                    :alt="memory.title"
-                    class="main-image"
-                  />
-                </Transition>
-              </div>
-              <div v-if="totalImages > 1" class="carousel-nav">
-                <button @click.stop="prevImage" :disabled="currentImageIndex === 0" class="carousel-btn prev">
-                  <Icon name="lucide:chevron-left" />
-                </button>
-                <button @click.stop="nextImage" :disabled="currentImageIndex === totalImages - 1" class="carousel-btn next">
-                  <Icon name="lucide:chevron-right" />
-                </button>
-              </div>
-              <div v-if="totalImages > 1" class="carousel-indicators">
-                <button
-                  v-for="(_, index) in memory.media_urls"
-                  :key="index"
-                  @click.stop="currentImageIndex = index"
-                  class="indicator-dot"
-                  :class="{ active: index === currentImageIndex }"
-                ></button>
-              </div>
-            </template>
-          </div>
+                
+                <div class="actions">
+                  <button @click="emit('like')" class="action-btn" :disabled="liking">
+                    <Icon v-if="liking" name="lucide:loader-circle" class="spinner" />
+                    <Icon v-else-if="userHasLiked" name="ic:favorite" class="like liked" />
+                    <Icon v-else name="ic:favorite-border" class="like" />
+                    <span>{{ likes.length }}</span>
+                  </button>
+                  <button @click="focusCommentInput" class="action-btn">
+                    <Icon name="lucide:message-circle" /> Comentar
+                  </button>
+                  <ShareDropdown :memory="memory" />
+                </div>
 
-          <div ref="detailsElement" class="details-column">
-            <header>
-              <h2>{{ memory.title }}</h2>
-            </header>
-            <div class="meta-and-desc" v-if="!isTextOnly">
-              <div class="meta">
-                <span><Icon name="lucide:calendar" /> {{ formattedDate }}</span>
-                <span v-if="memory.location"><Icon name="lucide:map-pin" /> {{ memory.location }}</span>
+                <div class="comments-section">
+                  <h4>Comentários ({{ comments.length }})</h4>
+                  <div class="comment-list">
+                    <p v-if="comments.length === 0">Nenhum comentário ainda.</p>
+                    <CommentItem
+                      v-else
+                      v-for="comment in comments"
+                      :key="comment.id"
+                      :comment="comment"
+                    />
+                  </div>
+                  <form @submit.prevent="submitComment">
+                    <textarea
+                      ref="commentInput"
+                      v-model="newCommentContent"
+                      name="comment"
+                      placeholder="Escreva um comentário..."
+                      @keydown.enter.prevent="submitComment"
+                    >
+                    </textarea>
+                    <button type="submit"><Icon name="lucide:send" /></button>
+                  </form>
+                </div>
               </div>
-              <p class="description">{{ memory.description }}</p>
+              <button @click="emit('close')" class="close-btn"><Icon name="lucide:x" /></button>
             </div>
-            
-            <div class="actions">
-              <button @click="emit('like')" class="action-btn" :disabled="liking">
-                <Icon v-if="liking" name="lucide:loader-circle" class="spinner" />
-                <Icon v-else-if="userHasLiked" name="ic:favorite" class="like liked" />
-                <Icon v-else name="ic:favorite-border" class="like" />
-                <span>{{ likes.length }}</span>
-              </button>
-              <button @click="focusCommentInput" class="action-btn">
-                <Icon name="lucide:message-circle" /> Comentar
-              </button>
-              <ShareDropdown :memory="memory" />
-            </div>
-
-            <div class="comments-section">
-              <h4>Comentários ({{ comments.length }})</h4>
-              <div class="comment-list">
-                <p v-if="comments.length === 0">Nenhum comentário ainda.</p>
-                <CommentItem
-                  v-else
-                  v-for="comment in comments"
-                  :key="comment.id"
-                  :comment="comment"
-                />
-              </div>
-              <form @submit.prevent="submitComment">
-                <textarea
-                  ref="commentInput"
-                  v-model="newCommentContent"
-                  name="comment"
-                  placeholder="Escreva um comentário..."
-                  @keydown.enter.prevent="submitComment"
-                >
-                </textarea>
-                <button type="submit"><Icon name="lucide:send" /></button>
-              </form>
-            </div>
-          </div>
-          <button @click="emit('close')" class="close-btn"><Icon name="lucide:x" /></button>
+          </Transition>
         </div>
-        
         <button @click="emit('navigate', 'prev')" class="nav-btn prev desktop-only"><Icon name="lucide:chevron-left" /></button>
         <button @click="emit('navigate', 'next')" class="nav-btn next desktop-only"><Icon name="lucide:chevron-right" /></button>
       </div>
@@ -225,19 +227,47 @@ watchEffect(() => {
 }
 .fade-enter-active .modal-content,
 .fade-leave-active .modal-content {
-  transition: transform 0.3s ease;
+  transition: transform .3s ease;
 }
 .fade-enter-from .modal-content,
 .fade-leave-to .modal-content {
-  transform: scale(0.95);
+  transform: scale(.95);
+}
+.transition-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 1200px;
+  max-height: 80vh;
+  overflow: hidden;
+}
+.navigate-next-enter-active,
+.navigate-next-leave-active,
+.navigate-prev-enter-active,
+.navigate-prev-leave-active {
+  transition: transform .3s ease-out;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.navigate-next-enter-from {
+  transform: translateX(100%);
+}
+.navigate-next-leave-to {
+  transform: translateX(-100%);
+}
+
+.navigate-prev-enter-from {
+  transform: translateX(-100%);
+}
+.navigate-prev-leave-to {
+  transform: translateX(100%);
 }
 .modal-content {
   display: grid;
   grid-template-columns: 2fr 1fr;
   width: 100%;
   height: 100%;
-  max-width: 1200px;
-  max-height: 80vh;
   background-color: hsl(var(--card));
   border-radius: var(--radius);
   position: relative;
@@ -248,6 +278,9 @@ watchEffect(() => {
   background-color: #000;
   position: relative;
   overflow: hidden;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .details-column {
   display: flex;
@@ -270,6 +303,7 @@ watchEffect(() => {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  pointer-events: none;
 }
 .carousel-nav {
   position: absolute;
@@ -543,6 +577,13 @@ watchEffect(() => {
     overflow-y: auto;
     align-items: flex-start;
     padding: 2rem 0;
+  }
+  .transition-wrapper {
+    width: 90%;
+    height: auto;
+    max-height: none;
+    margin: 0 auto;
+    overflow: visible;
   }
   .modal-content {
     display: flex;
