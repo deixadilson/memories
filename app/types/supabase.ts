@@ -435,34 +435,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      count_visible_memories: {
-        Args: { profile_id_param: string }
-        Returns: number
+      get_public_memory_page_details: {
+        Args: { p_memory_id: string; p_visitor_id?: string }
+        Returns: Json
       }
-      get_profile_by_username: {
-        Args: { username_text: string }
-        Returns: {
-          avatar_url: string | null
-          biography: string | null
-          created_at: string | null
-          date_of_birth: string | null
-          full_name: string | null
-          id: string
-          updated_at: string | null
-          username: string
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "profiles"
-          isOneToOne: false
-          isSetofReturn: true
-        }
+      get_public_profile_page_details: {
+        Args: { p_username: string; p_visitor_id?: string }
+        Returns: Json
       }
       get_visible_memories: {
         Args: {
-          end_date_filter?: string
-          profile_id_param: string
-          start_date_filter?: string
+          end_date?: string
+          profile_id: string
+          start_date?: string
+          visitor_id?: string
         }
         Returns: {
           category: Database["public"]["Enums"]["memory_category"]
@@ -481,28 +467,6 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "memories"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      get_visible_periods: {
-        Args: { profile_id_param: string }
-        Returns: {
-          created_at: string | null
-          description: string | null
-          end_date: string | null
-          id: string
-          location: string | null
-          start_date: string
-          title: string
-          type: Database["public"]["Enums"]["period_type"]
-          updated_at: string | null
-          user_id: string
-          visibility: Database["public"]["Enums"]["visibility_type"]
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "periods"
           isOneToOne: false
           isSetofReturn: true
         }

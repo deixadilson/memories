@@ -123,7 +123,7 @@ watch(profile, (newProfile) => {
           </div>
           <NuxtLink
             v-if="profile"
-            :to="`/${profile.username}`"
+            :to="`/@${profile.username}`"
             class="btn secondary"
           >
             <Icon name="lucide:external-link" />

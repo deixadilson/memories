@@ -6,7 +6,19 @@ export default defineNuxtConfig({
   modules: [
     '@nuxtjs/supabase',
     '@nuxt/icon'
-  ], 
+  ],
+  hooks: {
+    'pages:extend'(pages) {
+      const profileRoute = pages.find(page => page.name === 'profiles-username');
+      if (profileRoute) {
+        profileRoute.path = '/@:username';
+      }
+      const memoryRoute = pages.find(page => page.name === 'profiles-username-id');
+      if (memoryRoute) {
+        memoryRoute.path = '/@:username/:id';
+      }
+    }
+  },
   supabase: {
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_KEY,
@@ -17,7 +29,8 @@ export default defineNuxtConfig({
         '/',
         '/user/register',
         '/user/password-reset',
-        '/user/password-update'
+        '/user/password-update',
+        '/@.*'
       ]
     }
   }

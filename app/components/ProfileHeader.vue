@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core';
+import type { JwtPayload } from '@supabase/supabase-js';
 import type { Profile, FriendshipStatus } from '~/types/app';
 
 defineProps<{
+  loggedInUser: JwtPayload | null;
   profile: Profile;
   status: FriendshipStatus | 'self';
   stats: {
@@ -37,7 +39,7 @@ onClickOutside(menu, () => isMenuOpen.value = false);
         <div class="stat-item"><strong>{{ stats.following }}</strong> Seguindo</div>
       </div>
       <p v-if="profile.biography" class="bio">{{ profile.biography }}</p>
-      <div class="actions">
+      <div v-if="loggedInUser" class="actions">
         <NuxtLink v-if="status === 'self'" to="/dashboard/profile" class="btn secondary">
           <Icon name="lucide:pencil" /> Editar Perfil
         </NuxtLink>

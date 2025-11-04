@@ -1,20 +1,71 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core';
 import { toast } from 'vue-sonner';
-import type { Memory } from '~/types/app';
+import type { MemoryWithAuthor } from '~/types/app';
 
-const props = defineProps<{ memory: Memory }>();
+const props = defineProps<{ memory: MemoryWithAuthor }>();
+
 const isOpen = ref(false);
 const dropdown = ref(null);
-onClickOutside(dropdown, () => isOpen.value = false);
+const user = useSupabaseUser();
+const { profile: loggedInUserProfile } = useProfile();
 
-const memoryLink = computed(() => `${window.location.origin}/memories/${props.memory.id}`);
-const shareText = computed(() => `Veja esta memória: ${props.memory.title}`);
+const isOwner = computed(() => user.value?.sub === props.memory.user_id);
+
+const memoryLink = computed(() => {
+  const username = Array.isArray(props.memory.profiles) 
+  ? props.memory.profiles[0]?.username 
+  : props.memory.profiles?.username;
+  return `${window.location.origin}/@${username}/${props.memory.id}`;
+});
+
+const shareText = computed(() => {
+  const sharerName = loggedInUserProfile.value?.full_name || loggedInUserProfile.value?.username || 'Alguém';
+  const authorProfile = Array.isArray(props.memory.profiles) ? props.memory.profiles[0] : props.memory.profiles;
+  const authorName = authorProfile?.full_name || authorProfile?.username || 'um usuário';
+  const text = `${sharerName} quer compartilhar uma memória de ${authorName} com você: ${props.memory.title}.`;
+  return text;
+});
+
+onClickOutside(dropdown, () => isOpen.value = false);
 
 function copyLink() {
   navigator.clipboard.writeText(memoryLink.value);
   toast.success('Link copiado para a área de transferência!');
   isOpen.value = false;
+}
+
+function repostMemory() {
+  if (props.memory.visibility !== 'public') {
+    toast.error("Apenas memórias públicas podem ser repostadas.");
+    return;
+  }
+  if (isOwner.value) {
+    toast.error("Você não pode repostar sua própria memória.");
+    return;
+  }
+  toast.info('A funcionalidade de repostar ainda não foi implementada.');
+  isOpen.value = false;
+}
+
+function openShareWindow(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer');
+  isOpen.value = false;
+}
+
+function shareToWhatsApp() {
+  const url = `https://wa.me/?text=${encodeURIComponent(shareText.value + ' ' + memoryLink.value)}`;
+  openShareWindow(url);
+}
+
+function shareToFacebook() {
+  const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(memoryLink.value)}`;
+  openShareWindow(url);
+}
+
+function shareToTwitter() {
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText.value)}&url=${encodeURIComponent(memoryLink.value)}`;
+  openShareWindow(url);
 }
 </script>
 
@@ -25,10 +76,10 @@ function copyLink() {
     </button>
     <div v-if="isOpen" class="dropdown-content">
       <button @click="copyLink"><Icon name="lucide:link"/><span>Copiar link</span></button>
-      <button @click="copyLink"><Icon name="lucide:repeat"/> Repostar</button>
-      <button :to="`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + memoryLink)}`" target="_blank"><Icon name="lucide:message-circle"/>WhatsApp</button>
-      <button :to="`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(memoryLink)}`" target="_blank"><Icon name="lucide:facebook"/>Facebook</button>
-      <button :to="`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(memoryLink)}`" target="_blank"><Icon name="lucide:twitter"/>Twitter</button>
+      <button @click="repostMemory"><Icon name="lucide:repeat"/> Repostar</button>
+      <button @click="shareToWhatsApp"><Icon name="mdi:whatsapp"/> WhatsApp</button>
+      <button @click="shareToFacebook"><Icon name="lucide:facebook"/> Facebook</button>
+      <button @click="shareToTwitter"><Icon name="lucide:twitter"/> Twitter</button>
     </div>
   </div>
 </template>
@@ -72,23 +123,12 @@ function copyLink() {
   z-index: 50;
   animation: enter 0.2s ease-out;
 }
-.dropdown-content > button,
-.dropdown-content > a {
-  display: block;
+.dropdown-content > button {
+  display: flex;
+  justify-content: left;
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  border-radius: calc(var(--radius) - 4px);
 }
-.dropdown-content > button:hover,
-.dropdown-content > a:hover {
+.dropdown-content > button:hover {
   background-color: hsl(var(--muted));
   color: hsl(var(--accent-foreground));
 }

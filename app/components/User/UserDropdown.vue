@@ -50,7 +50,14 @@ const handleLogout = async () => {
         </button>
       </div>
     </template>
-    <div v-else class="avatar-button skeleton"></div>
+    <template v-else-if="user && !profile">
+      <div class="avatar-button skeleton"></div>
+    </template>
+    <template v-else>
+      <NuxtLink to="/user/login" class="btn primary login-btn">
+        <Icon name="lucide:log-in"/> Login
+      </NuxtLink>
+    </template>
   </div>
 </template>
 

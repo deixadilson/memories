@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
+import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import type { Database } from '~/types/supabase';
-import type { Profile, PeriodWithVisibility, MemoryComplete, FriendshipStatus } from '~/types/app';
+import type { Profile, PeriodWithVisibility, MemoryComplete, FriendshipStatus, ProfilePageDetails } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -9,11 +10,10 @@ const client = useSupabaseClient<Database>();
 const route = useRoute();
 const loggedInUser = useSupabaseUser();
 const { open: openMemoryModal } = useMemoryModal();
-const { getFriendshipStatus } = useFriendship();
 
 const viewState = ref<'periods-list' | 'period-details'>('periods-list');
 const loadingProfile = ref(true);
-const loadingMemories = ref(true);
+const loadingMemories = ref(false);
 const loadingAction = ref(false);
 const profile = ref<Profile | null>(null);
 const periods = ref<PeriodWithVisibility[]>([]);
@@ -24,52 +24,30 @@ const stats = ref({ memories: 0, followers: 0, following: 0 });
 
 async function fetchData() {
   const username = route.params.username as string;
-  if (!loggedInUser.value) return;
-
   loadingProfile.value = true;
-  const { data: profileData, error: profileError } = await client
-    .rpc('get_profile_by_username', { username_text: username })
-    .single();
 
-  if (profileError || !profileData) {
-    toast.error('Perfil não encontrado.');
+  try {
+    const { data, error } = await client
+      .rpc('get_public_profile_page_details', {
+        p_username: username,
+        p_visitor_id: loggedInUser.value?.sub,
+      })
+      .single() as PostgrestSingleResponse<ProfilePageDetails>;
+
+    if (error) throw error;
+    if (!data) throw new Error('Perfil não encontrado.');
+
+    profile.value = data.profile;
+    stats.value = data.stats;
+    periods.value = data.periods;
+    friendshipStatus.value = data.friendship_status;
+
+  } catch (error: any) {
+    toast.error(error.message);
+    navigateTo('/dashboard');
+  } finally {
     loadingProfile.value = false;
-    return navigateTo('/dashboard');
   }
-  profile.value = profileData;
-
-  if (profileData.id === loggedInUser.value?.sub) {
-    friendshipStatus.value = 'self';
-  } else {
-    const { data: relationships } = await client
-      .from('friendships')
-      .select('*')
-      .or(
-        `and(requester_id.eq.${loggedInUser.value.sub},receiver_id.eq.${profileData.id}),` +
-        `and(requester_id.eq.${profileData.id},receiver_id.eq.${loggedInUser.value.sub})`
-      );
-
-    friendshipStatus.value = getFriendshipStatus(loggedInUser.value.sub, relationships || [], profileData.id);
-  }
-  
-  const [memoriesCount, followersCount, followingCount] = await Promise.all([
-    client.rpc('count_visible_memories', { profile_id_param: profileData.id }),
-    client.from('friendships').select('*', { count: 'exact', head: true }).eq('receiver_id', profileData.id).eq('status', 'accepted'),
-    client.from('friendships').select('*', { count: 'exact', head: true }).eq('requester_id', profileData.id).eq('status', 'accepted')
-  ]);
-  
-  stats.value = {
-    memories: memoriesCount.data ?? 0,
-    followers: followersCount?.count ?? 0,
-    following: followingCount?.count ?? 0,
-  };
-  
-  const { data: periodsData, error: periodsError } = await client
-    .rpc('get_visible_periods', { profile_id_param: profileData.id });
-  
-  if (periodsError) toast.error("Erro ao carregar períodos.");
-  periods.value = periodsData || [];
-  loadingProfile.value = false;
 }
 
 async function handleAction(action: 'follow' | 'unfollow' | 'cancel_request' | 'accept' | 'reject' | 'block' | 'unblock') {
@@ -135,9 +113,10 @@ async function selectPeriod(period: PeriodWithVisibility) {
   loadingMemories.value = true;
   const { data: memoriesData, error: memoriesError } = await client
     .rpc('get_visible_memories', {
-      profile_id_param: profile.value!.id,
-      start_date_filter: period.start_date,
-      end_date_filter: period.end_date || undefined,
+      profile_id: profile.value!.id,
+      visitor_id: loggedInUser.value?.sub,
+      start_date: period.start_date,
+      end_date: period.end_date || undefined,
     });
   
     if (memoriesError) toast.error("Erro ao carregar memórias do período.");
@@ -161,7 +140,7 @@ onMounted(fetchData);
 <template>
   <div v-if="loadingProfile" class="loading-state"><Icon name="lucide:loader-circle" class="spinner" /><span>Carregando perfil...</span></div>
   <div v-else-if="profile">
-    <ProfileHeader :profile="profile" :status="friendshipStatus" :loading="loadingAction" @action="handleAction" :stats="stats" />
+    <ProfileHeader :logged-in-user="loggedInUser"  :profile="profile" :status="friendshipStatus" :stats="stats" :loading="loadingAction" @action="handleAction" />
     
     <div v-if="viewState === 'periods-list'">
       <h2 class="section-title">Períodos de Vida</h2>

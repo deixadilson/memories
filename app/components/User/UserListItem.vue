@@ -31,7 +31,7 @@ onClickOutside(menu, () => isMenuOpen.value = false);
         </div>
       </div>
       <div>
-        <NuxtLink :to="`/${user.username}`" class="username-link">
+        <NuxtLink :to="`/@${user.username}`" class="username-link">
           <p class="display-name">{{ user.full_name || user.username }}</p>
         </NuxtLink>
         <p v-if="user.full_name" class="username-handle">@{{ user.username }}</p>

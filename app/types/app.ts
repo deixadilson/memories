@@ -70,3 +70,25 @@ export interface SelectedMemory {
   likes: Like[];
   comments: CommentWithProfile[];
 }
+export interface ProfilePageDetails {
+  profile: Profile;
+  stats: {
+    memories: number;
+    followers: number;
+    following: number;
+  };
+  periods: Period[];
+  friendship_status: FriendshipStatus | 'self';
+}
+export interface MemoryPageDetails {
+  is_visible: boolean;
+  profile: Profile;
+  stats: {
+    memories: number;
+    followers: number;
+    following: number;
+    likes: number;
+    comments: number;
+  };
+  memory: Memory | null;
+}
