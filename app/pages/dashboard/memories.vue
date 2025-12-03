@@ -138,21 +138,25 @@ onMounted(fetchMemories);
 
 <style scoped>
 .memories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  display: block;
+  column-count: 1;
+  column-gap: 1.5rem;
   margin-top: 2rem;
 }
-.card-wrapper { cursor: pointer; }
+.card-wrapper {
+  break-inside: avoid;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+}
 
 @media (min-width: 768px) {
   .memories-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-count: 2;
   }
 }
 @media (min-width: 1024px) {
   .memories-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-count: 3;
   }
 }
 </style>

@@ -172,6 +172,8 @@ onMounted(fetchData);
 
 <style scoped>
 .card-wrapper {
+  break-inside: avoid;
+  margin-bottom: 1.5rem;
   cursor: pointer;
 }
 .periods-grid {
@@ -189,8 +191,9 @@ onMounted(fetchData);
   margin-top: 2rem;
 }
 .memories-grid {
-  display: grid;
-  gap: 1.5rem;
+  display: block;
+  column-count: 1;
+  column-gap: 1.5rem;
 }
 .section-title {
   font-size: 1.5rem;
@@ -199,13 +202,19 @@ onMounted(fetchData);
 }
 
 @media (min-width: 768px) {
-  .periods-grid, .memories-grid {
+  .periods-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .memories-grid {
+    column-count: 2;
   }
 }
 @media (min-width: 1024px) {
-  .periods-grid, .memories-grid {
+  .periods-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .memories-grid {
+    column-count: 3;
   }
 }
 </style>

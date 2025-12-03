@@ -1,6 +1,6 @@
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { UserModalState, MemoryComplete, CommentWithProfile, Like } from '~/types/app';
+import type { UserModalState, MemoryComplete, Like } from '~/types/app';
 
 export const useMemoryModal = () => {
   const state = useState<UserModalState>('memory-modal-state', () => ({

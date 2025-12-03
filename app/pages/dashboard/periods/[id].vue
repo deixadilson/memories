@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 import type { Database } from '~/types/supabase';
-import type { Period, MemoryWithAuthor } from '~/types/app';
+import type { Period, MemoryComplete } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
@@ -12,7 +12,7 @@ const { open: openMemoryModal } = useMemoryModal();
 
 const loading = ref(true);
 const period = ref<Period | null>(null);
-const memories = ref<MemoryWithAuthor[]>([]);
+const memories = ref<MemoryComplete[]>([]);
 
 async function fetchData() {
   if (!user.value) return;
@@ -47,7 +47,7 @@ async function fetchData() {
   if (memoriesError) {
     toast.error('Erro ao buscar as memórias deste período.');
   } else {
-    memories.value = memoriesData;
+    memories.value = memoriesData as MemoryComplete[];
   }
   
   loading.value = false;
@@ -93,19 +93,24 @@ onMounted(fetchData);
   margin-bottom: 1.5rem;
 }
 .memories-grid {
-  display: grid;
-  gap: 1.5rem;
+  column-count: 1;
+  column-gap: 1.5rem;
+  margin-top: 2rem;
 }
-.card-wrapper { cursor: pointer; }
+.card-wrapper { 
+  cursor: pointer; 
+  break-inside: avoid;
+  margin-bottom: 1.5rem;
+}
 
 @media (min-width: 768px) {
   .memories-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-count: 2;
   }
 }
 @media (min-width: 1024px) {
   .memories-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-count: 3;
   }
 }
 </style>

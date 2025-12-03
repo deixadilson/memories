@@ -26,6 +26,7 @@ const emit = defineEmits(['close', 'navigate', 'like', 'comment']);
               :liking="liking"
               @like="emit('like')"
               @comment="emit('comment')"
+              @navigate="emit('navigate', $event)"
             />
           </Transition>
           <button @click="emit('close')" class="close-btn"><Icon name="lucide:x" /></button>

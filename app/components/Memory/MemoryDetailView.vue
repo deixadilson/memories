@@ -104,6 +104,10 @@ const endDetailsTouch = (e: TouchEvent) => {
   if (diffX > 30) emit('navigate', 'prev');
   else if (diffX < -30) emit('navigate', 'next');
 }
+
+watch(() => props.memory, () => {
+  currentImageIndex.value = 0;
+});
 </script>
 
 <template>
@@ -217,6 +221,9 @@ const endDetailsTouch = (e: TouchEvent) => {
 .media-column {
   background-color: #000;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   touch-action: pan-y;
   -webkit-user-select: none;
@@ -226,15 +233,12 @@ const endDetailsTouch = (e: TouchEvent) => {
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
-  overflow-y: auto;
+  overflow: hidden auto;
 }
 .image-slider-wrapper {
   width: 100%;
   height: 100%;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .main-image {
   position: absolute;
@@ -308,13 +312,14 @@ const endDetailsTouch = (e: TouchEvent) => {
   width: 100%;
   height: 100%;
   min-height: 400px;
-  padding: 2rem;
+  padding: 4rem 2rem 2rem;
   background-color: hsl(var(--background));
   background-image: linear-gradient(to bottom right, hsl(var(--primary) / .3), hsl(var(--accent) / .3), hsl(var(--primary) / .5));
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
+  overflow-y: auto;
 }
 .text-media-container .meta {
   position: absolute;
@@ -477,19 +482,29 @@ const endDetailsTouch = (e: TouchEvent) => {
     display: flex;
     flex-direction: column;
     height: auto;
-    max-height: none;
-    width: 90%;
-    margin: 0 auto;
+    width: 100%;
     border-radius: var(--radius);
   }
   .media-column {
     width: 100%;
-    aspect-ratio: 4 / 3;
-    max-height: 70vh;
+    flex-shrink: 0;
     border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .media-column .image-slider-wrapper {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+  }
+  .media-column .text-media-container {
+    height: auto;
+    min-height: 50vh;
+    max-height: 80vh;
+  }
+  .text-media-container {
+    max-height: 80vh;
   }
   .details-column {
     height: auto;
+    flex-shrink: 0;
   }
   .actions {
     justify-content: space-evenly;
