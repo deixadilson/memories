@@ -162,19 +162,22 @@ const displayMedia = props.memory.image ? [props.memory.image] : props.memory.me
   border-radius: 9999px;
 }
 .badge.travel {
-  background-color: hsl(var(--gold));
+  background-color: hsl(var(--gold-light));
 }
 .badge.family {
-  background-color: hsl(var(--gold));
+  background-color: hsl(var(--pink-light));
 }
 .badge.work {
   background-color: hsl(var(--silver));
 }
+.badge.education {
+  background-color: hsl(var(--beige-dark));
+}
 .badge.personal {
-  background-color: hsl(var(--pink-light));
+  background-color: hsl(var(--pink-lighter));
 }
 .badge.milestone {
-  background-color: hsl(var(--beige-dark));
+  background-color: hsl(var(--gold-light));
 }
 img.icon {
   width: .75rem;

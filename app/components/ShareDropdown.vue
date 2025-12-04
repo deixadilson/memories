@@ -16,7 +16,7 @@ const memoryLink = computed(() => {
   const username = Array.isArray(props.memory.profiles) 
   ? props.memory.profiles[0]?.username 
   : props.memory.profiles?.username;
-  return `${window.location.origin}/@${username}/${props.memory.id}`;
+  return `${window.location.origin}/@${username}/memory/${props.memory.id}`;
 });
 
 const shareText = computed(() => {

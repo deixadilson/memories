@@ -49,11 +49,11 @@ const formattedDate = computed(() => {
       </div>
     </div>
     <div class="card-body">
+      <p v-if="period.description" class="description">{{ period.description }}</p>
       <p v-if="period.location" class="location">
         <Icon name="lucide:map-pin"/>
         {{ period.location }}
       </p>
-      <p v-if="period.description" class="description">{{ period.description }}</p>
     </div>
   </div>
 </template>
@@ -115,7 +115,6 @@ h3 {
   display: flex;
   align-items: center;
   gap: .5rem;
-  margin-bottom: .75rem;
 }
 .location .iconify {
   width: 1rem; height: 1rem;
@@ -125,5 +124,6 @@ h3 {
   font-size: .875rem;
   line-height: 1.25rem;
   color: hsl(var(--foreground) / .8);
+  margin-bottom: .75rem;
 }
 </style>

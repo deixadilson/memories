@@ -443,6 +443,29 @@ export type Database = {
         Args: { p_username: string; p_visitor_id?: string }
         Returns: Json
       }
+      get_single_visible_memory: {
+        Args: { memory_id: string; visitor_id?: string }
+        Returns: {
+          category: Database["public"]["Enums"]["memory_category"]
+          created_at: string | null
+          date: string
+          date_precision: Database["public"]["Enums"]["date_precision"]
+          description: string | null
+          id: string
+          location: string | null
+          media_urls: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          visibility: Database["public"]["Enums"]["visibility_type"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "memories"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_visible_memories: {
         Args: {
           end_date?: string

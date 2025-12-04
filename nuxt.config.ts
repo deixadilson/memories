@@ -13,9 +13,13 @@ export default defineNuxtConfig({
       if (profileRoute) {
         profileRoute.path = '/@:username';
       }
-      const memoryRoute = pages.find(page => page.name === 'profiles-username-id');
+      const memoryRoute = pages.find(page => page.name === 'profiles-username-memory-id');
       if (memoryRoute) {
-        memoryRoute.path = '/@:username/:id';
+        memoryRoute.path = '/@:username/memory/:id';
+      }
+      const periodRoute = pages.find(page => page.name === 'profiles-username-period-id');
+      if (periodRoute) {
+        periodRoute.path = '/@:username/period/:id';
       }
     }
   },

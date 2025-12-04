@@ -146,7 +146,7 @@ async function handleSubmit() {
     </div>
       <div class="form-group">
         <label for="location">Localização</label>
-        <LocationInput id="location" v-model="periodData.location" />
+        <input id="location" v-model="periodData.location" type="text" placeholder="Ex. São Paulo, Brasil"/>
       </div>
     <div class="form-group">
       <label for="description">Descrição</label>
