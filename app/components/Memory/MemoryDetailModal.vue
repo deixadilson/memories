@@ -20,6 +20,7 @@ const emit = defineEmits(['close', 'navigate', 'like', 'comment']);
         <div class="transition-wrapper">
           <Transition :name="navigationDirection" mode="out-in">
             <MemoryDetailView
+              :key="memory.id"
               :memory="memory"
               :likes="likes"
               :comments="comments"

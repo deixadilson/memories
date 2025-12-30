@@ -19,14 +19,29 @@ const memories = ref<MemoryComplete[]>([]);
 const editingMemory = ref<MemoryComplete | null>(null);
 const memoryToDelete = ref<MemoryComplete | null>(null);
 
+const filters = ref({
+  search: '',
+  category: 'all',
+  sort: 'newest' as 'newest' | 'oldest'
+});
+
+const memoryCategories = [
+  { label: 'Viagem', value: 'travel', icon: 'lucide:plane' },
+  { label: 'Educação', value: 'education', icon: 'lucide:graduation-cap' },
+  { label: 'Família', value: 'family', icon: 'lucide:users' },
+  { label: 'Carreira', value: 'work', icon: 'lucide:briefcase' },
+  { label: 'Pessoal', value: 'personal', icon: 'lucide:user' },
+  { label: 'Conquista', value: 'milestone', icon: 'lucide:award' },
+  { label: 'Outro', value: 'other', icon: 'lucide:shapes' },
+];
+
 async function fetchMemories() {
   if (!user.value) return;
 
   const { data, error } = await client
     .from('memories')
     .select('*, profiles(*), memory_list_visibility(*)')
-    .eq('user_id', user.value.sub)
-    .order('date', { ascending: false });
+    .eq('user_id', user.value.sub);
   
   if (error) {
     toast.error('Erro ao carregar as memórias.');
@@ -35,6 +50,32 @@ async function fetchMemories() {
   }
   loading.value = false;
 }
+
+const filteredMemories = computed(() => {
+  let result = [...memories.value];
+
+  if (filters.value.search) {
+    const search = filters.value.search.toLowerCase();
+    result = result.filter(m => 
+      m.title.toLowerCase().includes(search) || 
+      m.description?.toLowerCase().includes(search) ||
+      m.location?.toLowerCase().includes(search)
+    );
+  }
+
+  if (filters.value.category !== 'all') {
+    result = result.filter(m => m.category === filters.value.category);
+  }
+
+  result.sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    
+    return filters.value.sort === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+
+  return result;
+});
 
 function editMemory(memory: MemoryComplete) {
   editingMemory.value = memory;
@@ -89,17 +130,35 @@ onMounted(fetchMemories);
       </button>
     </div>
 
+    <ListFilters
+      type="memories"
+      placeholder="Buscar memórias..."
+      :categories="memoryCategories"
+      v-model="filters"
+    />
+
     <div v-if="loading" class="loading-state"><Icon name="lucide:loader-circle" class="spinner"/> Carregando...</div>
-    <div v-else-if="memories.length > 0" class="memories-grid">
-      <div v-for="(memory, index) in memories" :key="memory.id" @click="openMemoryModal(memories, index)" class="card-wrapper">
-        <MemoryCard
-          :memory="memory"
-          :is-owner="true"
-          @edit="editMemory(memory)"
-          @delete="promptDeleteMemory(memory)"
-        />
-      </div>
+    <div v-else-if="filteredMemories.length > 0">
+      <MasonryGrid :items="filteredMemories" v-slot="{ item, index }">
+        <div @click="openMemoryModal(filteredMemories, index)" class="card-wrapper">
+          <MemoryCard
+            :memory="item"
+            :is-owner="true"
+            @edit="editMemory(item)"
+            @delete="promptDeleteMemory(item)"
+          />
+        </div>
+      </MasonryGrid>
     </div>
+    <EmptyState v-else-if="memories.length > 0"
+      icon="lucide:search-x"
+      title="Nenhuma memória encontrada"
+      message="Tente ajustar sua busca ou filtros para encontrar o que procura."
+    >
+      <button @click="filters = { search: '', category: 'all', sort: 'newest' }" class="btn secondary">
+        Limpar Filtros
+      </button>
+    </EmptyState>
     <EmptyState v-else
       icon="lucide:image"
       title="Nenhuma memória cadastrada"
@@ -137,26 +196,8 @@ onMounted(fetchMemories);
 </template>
 
 <style scoped>
-.memories-grid {
-  display: block;
-  column-count: 1;
-  column-gap: 1.5rem;
-  margin-top: 2rem;
-}
 .card-wrapper {
-  break-inside: avoid;
-  margin-bottom: 1.5rem;
   cursor: pointer;
 }
 
-@media (min-width: 768px) {
-  .memories-grid {
-    column-count: 2;
-  }
-}
-@media (min-width: 1024px) {
-  .memories-grid {
-    column-count: 3;
-  }
-}
 </style>

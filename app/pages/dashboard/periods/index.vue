@@ -16,13 +16,28 @@ const periods = ref<PeriodWithVisibility[]>([]);
 const editingPeriod = ref<PeriodWithVisibility | null>(null);
 const periodToDelete = ref<PeriodWithVisibility | null>(null);
 
+const filters = ref({
+  search: '',
+  category: 'all',
+  sort: 'newest' as 'newest' | 'oldest'
+});
+
+const periodCategories = [
+  { label: 'Educação', value: 'education', icon: 'lucide:graduation-cap' },
+  { label: 'Carreira', value: 'work', icon: 'lucide:briefcase' },
+  { label: 'Relacionamento', value: 'relationship', icon: 'lucide:heart' },
+  { label: 'Residência', value: 'residence', icon: 'lucide:home' },
+  { label: 'Viagem', value: 'travel', icon: 'lucide:plane' },
+  { label: 'Projeto', value: 'project', icon: 'lucide:code' },
+  { label: 'Outro', value: 'other', icon: 'lucide:calendar' },
+];
+
 async function fetchPeriods() {
   if (!user.value) return;
   const { data, error } = await client
     .from('periods')
     .select('*, period_list_visibility(*)')
-    .eq('user_id', user.value.sub)
-    .order('start_date', { ascending: false });
+    .eq('user_id', user.value.sub);
   
   if (error) {
     toast.error('Erro ao carregar os períodos.');
@@ -31,6 +46,32 @@ async function fetchPeriods() {
   }
   loading.value = false;
 }
+
+const filteredPeriods = computed(() => {
+  let result = [...periods.value];
+
+  if (filters.value.search) {
+    const search = filters.value.search.toLowerCase();
+    result = result.filter(p => 
+      p.title.toLowerCase().includes(search) || 
+      p.description?.toLowerCase().includes(search) ||
+      p.location?.toLowerCase().includes(search)
+    );
+  }
+
+  if (filters.value.category !== 'all') {
+    result = result.filter(p => p.type === filters.value.category);
+  }
+
+  result.sort((a, b) => {
+    const dateA = new Date(a.start_date).getTime();
+    const dateB = new Date(b.start_date).getTime();
+    
+    return filters.value.sort === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+
+  return result;
+});
 
 function editPeriod(period: PeriodWithVisibility) {
   editingPeriod.value = period;
@@ -88,10 +129,17 @@ onMounted(fetchPeriods);
     </button>
   </div>
 
+    <ListFilters
+      type="periods"
+      placeholder="Buscar períodos..."
+      :categories="periodCategories"
+      v-model="filters"
+    />
+
   <div v-if="loading" class="loading-state"><Icon name="lucide:loader-circle" class="spinner"/> Carregando...</div>
-  <div v-else-if="periods.length > 0" class="periods-grid">
+  <div v-else-if="filteredPeriods.length > 0" class="periods-grid">
     <div
-      v-for="period in periods"
+      v-for="period in filteredPeriods"
       :key="period.id"
       @click="navigateToPeriod(period.id)"
       class="period-link"
@@ -104,6 +152,15 @@ onMounted(fetchPeriods);
       />
     </div>
   </div>
+  <EmptyState v-else-if="periods.length > 0"
+    icon="lucide:search-x"
+    title="Nenhum período encontrado"
+    message="Tente ajustar sua busca ou filtros para encontrar o que procura."
+  >
+    <button @click="filters = { search: '', category: 'all', sort: 'newest' }" class="btn secondary">
+      Limpar Filtros
+    </button>
+  </EmptyState>
   <EmptyState v-else
     icon="lucide:calendar"
     title="Nenhum período cadastrado"
@@ -154,4 +211,5 @@ onMounted(fetchPeriods);
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
 </style>

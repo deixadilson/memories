@@ -45,6 +45,48 @@ async function fetchData() {
   }
 }
 
+const filters = ref({
+  search: '',
+  category: 'all',
+  sort: 'newest' as 'newest' | 'oldest'
+});
+
+const periodCategories = [
+  { label: 'Educação', value: 'education', icon: 'lucide:graduation-cap' },
+  { label: 'Carreira', value: 'work', icon: 'lucide:briefcase' },
+  { label: 'Relacionamento', value: 'relationship', icon: 'lucide:heart' },
+  { label: 'Residência', value: 'residence', icon: 'lucide:home' },
+  { label: 'Viagem', value: 'travel', icon: 'lucide:plane' },
+  { label: 'Projeto', value: 'project', icon: 'lucide:code' },
+  { label: 'Outro', value: 'other', icon: 'lucide:calendar' },
+];
+
+const filteredPeriods = computed(() => {
+  let result = [...periods.value];
+
+  if (filters.value.search) {
+    const search = filters.value.search.toLowerCase();
+    result = result.filter(p => 
+      p.title.toLowerCase().includes(search) || 
+      p.description?.toLowerCase().includes(search) ||
+      p.location?.toLowerCase().includes(search)
+    );
+  }
+
+  if (filters.value.category !== 'all') {
+    result = result.filter(p => p.type === filters.value.category);
+  }
+
+  result.sort((a, b) => {    
+    const dateA = new Date(a.start_date).getTime();
+    const dateB = new Date(b.start_date).getTime();
+    
+    return filters.value.sort === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+
+  return result;
+});
+
 async function handleAction(action: 'follow' | 'unfollow' | 'cancel_request' | 'accept' | 'reject' | 'block' | 'unblock') {
   if (!loggedInUser.value || !profile.value || loadingAction.value) return;
   
@@ -114,11 +156,28 @@ onMounted(fetchData);
     
     <div>
       <h2 class="section-title">Períodos de Vida</h2>
-      <div v-if="periods.length > 0" class="periods-grid">
-        <div v-for="period in periods" :key="period.id" @click="selectPeriod(period)" class="card-wrapper">
+      
+      <ListFilters
+        type="periods"
+        placeholder="Buscar períodos..."
+        :categories="periodCategories"
+        v-model="filters"
+      />
+
+      <div v-if="filteredPeriods.length > 0" class="periods-grid">
+        <div v-for="period in filteredPeriods" :key="period.id" @click="selectPeriod(period)" class="card-wrapper">
           <PeriodCard :period="period" />
         </div>
       </div>
+      <EmptyState v-else-if="periods.length > 0"
+        icon="lucide:search-x"
+        title="Nenhum período encontrado"
+        message="Tente ajustar sua busca ou filtros para encontrar o que procura."
+      >
+        <button @click="filters = { search: '', category: 'all', sort: 'newest' }" class="btn secondary">
+          Limpar Filtros
+        </button>
+      </EmptyState>
       <EmptyState v-else icon="lucide:image-off" title="Nenhum período encontrado." :message="`${profile.username} não registrou nenhum período público.`"></EmptyState>
     </div>
   </div>

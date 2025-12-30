@@ -73,6 +73,48 @@ async function fetchMemories(period: PeriodWithVisibility) {
   loadingMemories.value = false;
 }
 
+const filters = ref({
+  search: '',
+  category: 'all',
+  sort: 'newest' as 'newest' | 'oldest'
+});
+
+const memoryCategories = [
+  { label: 'Viagem', value: 'travel', icon: 'lucide:plane' },
+  { label: 'Educação', value: 'education', icon: 'lucide:graduation-cap' },
+  { label: 'Família', value: 'family', icon: 'lucide:users' },
+  { label: 'Carreira', value: 'work', icon: 'lucide:briefcase' },
+  { label: 'Pessoal', value: 'personal', icon: 'lucide:user' },
+  { label: 'Conquista', value: 'milestone', icon: 'lucide:award' },
+  { label: 'Outro', value: 'other', icon: 'lucide:shapes' },
+];
+
+const filteredMemories = computed(() => {
+  let result = [...memoriesForPeriod.value];
+
+  if (filters.value.search) {
+    const search = filters.value.search.toLowerCase();
+    result = result.filter(m => 
+      m.title.toLowerCase().includes(search) || 
+      m.description?.toLowerCase().includes(search) ||
+      m.location?.toLowerCase().includes(search)
+    );
+  }
+
+  if (filters.value.category !== 'all') {
+    result = result.filter(m => m.category === filters.value.category);
+  }
+
+  result.sort((a, b) => {    
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    
+    return filters.value.sort === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+
+  return result;
+});
+
 async function handleAction(action: 'follow' | 'unfollow' | 'cancel_request' | 'accept' | 'reject' | 'block' | 'unblock') {
   if (!loggedInUser.value || !profile.value || loadingAction.value) return;
   
@@ -142,13 +184,30 @@ onMounted(fetchData);
         Voltar para todos os Períodos
       </NuxtLink>
       <PeriodDetailCard :period="period" />
-      <h2 class="section-title">Memórias deste período ({{ memoriesForPeriod.length }})</h2>
+      <ListFilters
+        type="memories"
+        placeholder="Buscar memórias..."
+        :categories="memoryCategories"
+        v-model="filters"
+      />
+
       <div v-if="loadingMemories" class="loading-state"><Icon name="lucide:loader-circle" class="spinner" /><span>Carregando memórias...</span></div>
-      <div v-else-if="memoriesForPeriod.length > 0" class="memories-grid">
-        <div v-for="(memory, index) in memoriesForPeriod" :key="memory.id" @click="openMemoryModal(memoriesForPeriod, index)" class="card-wrapper">
-          <MemoryCard :memory="memory" />
-        </div>
+      <div v-else-if="filteredMemories.length > 0">
+        <MasonryGrid :items="filteredMemories" v-slot="{ item, index }">
+          <div @click="openMemoryModal(filteredMemories, index)" class="memory-wrapper">
+            <MemoryCard :memory="item" />
+          </div>
+        </MasonryGrid>
       </div>
+      <EmptyState v-else-if="memoriesForPeriod.length > 0"
+        icon="lucide:search-x"
+        title="Nenhuma memória encontrada"
+        message="Tente ajustar sua busca ou filtros para encontrar o que procura."
+      >
+        <button @click="filters = { search: '', category: 'all', sort: 'newest' }" class="btn secondary">
+          Limpar Filtros
+        </button>
+      </EmptyState>
       <EmptyState v-else icon="lucide:image-off" title="Nenhuma memória encontrada." :message="`${profile.username} não registrou memórias públicas neste período.`"></EmptyState>
     </div>
   </div>
@@ -167,30 +226,13 @@ onMounted(fetchData);
 .back-link:hover {
   color: hsl(var(--foreground));
 }
-.card-wrapper {
-  break-inside: avoid;
-  margin-bottom: 1.5rem;
-  cursor: pointer;
-}
-.memories-grid {
-  display: block;
-  column-count: 1;
-  column-gap: 1.5rem;
-}
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
 }
+.memory-wrapper {
+  cursor: pointer;
+}
 
-@media (min-width: 768px) {
-  .memories-grid {
-    column-count: 2;
-  }
-}
-@media (min-width: 1024px) {
-  .memories-grid {
-    column-count: 3;
-  }
-}
 </style>

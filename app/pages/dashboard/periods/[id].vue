@@ -72,10 +72,12 @@ onMounted(fetchData);
       
       <h2 class="section-title">Memórias deste período ({{ memories.length }})</h2>
       
-      <div v-if="memories.length > 0" class="memories-grid">
-        <div v-for="(memory, index) in memories" :key="memory.id" @click="openMemoryModal(memories, index)" class="card-wrapper">
-          <MemoryCard :memory="memory" />
-        </div>
+      <div v-if="memories.length > 0">
+        <MasonryGrid :items="memories" v-slot="{ item, index }">
+          <div @click="openMemoryModal(memories, index)" class="memory-wrapper">
+            <MemoryCard :memory="item" />
+          </div>
+        </MasonryGrid>
       </div>
       <EmptyState v-else
         icon="lucide:image-off"
@@ -92,25 +94,7 @@ onMounted(fetchData);
   font-weight: 600;
   margin-bottom: 1.5rem;
 }
-.memories-grid {
-  column-count: 1;
-  column-gap: 1.5rem;
-  margin-top: 2rem;
-}
-.card-wrapper { 
-  cursor: pointer; 
-  break-inside: avoid;
-  margin-bottom: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .memories-grid {
-    column-count: 2;
-  }
-}
-@media (min-width: 1024px) {
-  .memories-grid {
-    column-count: 3;
-  }
+.memory-wrapper {
+  cursor: pointer;
 }
 </style>
