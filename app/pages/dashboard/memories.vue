@@ -5,6 +5,10 @@ import type { MemoryComplete } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
+useSeoMeta({
+  title: 'Minhas Memórias'
+});
+
 const { open: openMemoryModal } = useMemoryModal();
 
 const client = useSupabaseClient<Database>();
@@ -40,7 +44,7 @@ async function fetchMemories() {
 
   const { data, error } = await client
     .from('memories')
-    .select('*, profiles(*), memory_list_visibility(*)')
+    .select('*, profiles(*), memory_list_visibility(*), memory_user_tags(*)')
     .eq('user_id', user.value.sub);
   
   if (error) {

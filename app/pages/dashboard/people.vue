@@ -5,6 +5,10 @@ import type { Profile, Friendship, FriendshipStatus } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
+useSeoMeta({
+  title: 'Pessoas'
+});
+
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 const { getFriendshipStatus } = useFriendship();

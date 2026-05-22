@@ -3,6 +3,10 @@ import { toast } from 'vue-sonner';
 
 definePageMeta({ layout: 'dashboard' });
 
+useSeoMeta({
+  title: 'Alterar Senha'
+});
+
 const client = useSupabaseClient();
 const router = useRouter();
 

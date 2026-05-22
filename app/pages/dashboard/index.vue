@@ -5,6 +5,10 @@ import type { MemoryComplete } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
+useSeoMeta({
+  title: 'Dashboard'
+});
+
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 const { profile } = useProfile();

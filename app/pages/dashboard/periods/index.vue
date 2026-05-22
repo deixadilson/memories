@@ -5,6 +5,10 @@ import type { PeriodWithVisibility } from '~/types/app';
 
 definePageMeta({ layout: 'dashboard' });
 
+useSeoMeta({
+  title: 'Períodos de Vida'
+});
+
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 const router = useRouter();

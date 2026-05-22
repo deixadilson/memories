@@ -2,6 +2,8 @@
 const props = defineProps<{
   isOpen: boolean;
   existingMediaUrls: string[];
+  initialNewFiles?: File[];
+  initialRemovedUrls?: string[];
 }>();
 
 const emit = defineEmits(['close', 'save']);
@@ -12,8 +14,8 @@ const urlsToRemove = ref<string[]>([]);
 
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
-    newFiles.value = [];
-    urlsToRemove.value = [];
+    newFiles.value = props.initialNewFiles ? [...props.initialNewFiles] : [];
+    urlsToRemove.value = props.initialRemovedUrls ? [...props.initialRemovedUrls] : [];
     currentUrls.value = [...props.existingMediaUrls];
   }
 });

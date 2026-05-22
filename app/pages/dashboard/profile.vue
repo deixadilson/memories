@@ -5,6 +5,10 @@ import imageCompression from 'browser-image-compression';
 
 definePageMeta({ layout: 'dashboard' });
 
+useSeoMeta({
+  title: 'Meu Perfil'
+});
+
 const client = useSupabaseClient<Database>();
 const user = useSupabaseUser();
 const { profile, fetchProfile } = useProfile();

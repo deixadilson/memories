@@ -363,7 +363,9 @@ function closeTagModal() {
 
   <ManageMediaModal
     :is-open="isMediaModalOpen"
-    :existing-media-urls="initialData?.media_urls || []"
+    :existing-media-urls="existingMediaUrls"
+    :initial-new-files="filesToUpload"
+    :initial-removed-urls="removedMediaUrls"
     @close="closeMediaModal"
     @save="handleMediaSave"
   />

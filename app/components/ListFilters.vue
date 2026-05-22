@@ -12,7 +12,7 @@ const props = defineProps<{
   modelValue: {
     search: string;
     category: string;
-    sort: 'newest' | 'oldest' | 'az';
+    sort: 'newest' | 'oldest'
   };
 }>();
 

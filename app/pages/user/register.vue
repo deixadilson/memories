@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 
+useSeoMeta({
+  title: 'Criar Conta'
+});
+
 const client = useSupabaseClient();
 const router = useRouter();
 

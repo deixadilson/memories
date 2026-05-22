@@ -14,6 +14,10 @@ const loading = ref(true);
 const period = ref<Period | null>(null);
 const memories = ref<MemoryComplete[]>([]);
 
+useSeoMeta({
+  title: () => period.value ? `Período: ${period.value.title}` : 'Período'
+});
+
 async function fetchData() {
   if (!user.value) return;
   loading.value = true;

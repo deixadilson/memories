@@ -24,6 +24,10 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 
+useSeoMeta({
+  title: 'Entrar'
+});
+
 const client = useSupabaseClient();
 const router = useRouter();
 

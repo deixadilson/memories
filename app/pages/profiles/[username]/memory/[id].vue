@@ -12,7 +12,6 @@ const route = useRoute();
 const loggedInUser = useSupabaseUser();
 const { getFriendshipStatus } = useFriendship();
 
-const loading = ref(true);
 const profile = ref<Profile | null>(null);
 const memory = ref<MemoryWithAuthor | null>(null);
 const likes = ref<Like[]>([]);
@@ -22,67 +21,77 @@ const stats = ref({ memories: 0, followers: 0, following: 0 });
 const liking = ref(false);
 const accessDeniedReason = ref<'not_found' | 'permission_denied' | null>(null);
 
-async function fetchData() {
+const { data: pageDetails, pending: loading } = await useAsyncData(`memory-page-${route.params.id}`, async () => {
+  const supabase = useSupabaseClient<Database>();
+  const user = useSupabaseUser();
   const memoryId = route.params.id as string;
-  loading.value = true;
+  
+  const { data, error } = await supabase
+    .rpc('get_public_memory_page_details', {
+      p_memory_id: memoryId,
+      p_visitor_id: user.value?.sub,
+    })
+    .single() as PostgrestSingleResponse<MemoryPageDetails>;
 
-  try {
-    const { data, error } = await client
-      .rpc('get_public_memory_page_details', {
-        p_memory_id: memoryId,
-        p_visitor_id: loggedInUser.value?.sub,
-      })
-      .single() as PostgrestSingleResponse<MemoryPageDetails>;
+  if (error) throw error;
+  if (!data) return null;
 
-    if (error) throw error;
+  let commentsData: CommentWithProfile[] = [];
+  let likesData: Like[] = [];
+  if (data.is_visible) {
+    const [commentsRes, likesRes] = await Promise.all([
+      supabase.from('comments').select('*, profiles(*)').eq('memory_id', memoryId),
+      supabase.from('likes').select('*').eq('memory_id', memoryId),
+    ]);
+    commentsData = (commentsRes.data as CommentWithProfile[]) || [];
+    likesData = (likesRes.data as Like[]) || [];
+  }
 
-    if (!data) {
-      accessDeniedReason.value = 'not_found';
-      return;
+  let friendship: FriendshipStatus | 'self' = 'not_friends';
+  if (user.value && data.profile) {
+    if (data.profile.id === user.value.sub) {
+      friendship = 'self';
+    } else {
+      const { data: relationships } = await supabase.from('friendships').select('*').or(`and(requester_id.eq.${user.value.sub},receiver_id.eq.${data.profile.id}),and(requester_id.eq.${data.profile.id},receiver_id.eq.${user.value.sub})`);
+      friendship = getFriendshipStatus(user.value.sub, relationships || [], data.profile.id);
     }
+  }
 
-    profile.value = data.profile;
-    stats.value = data.stats;
+  return {
+    ...data,
+    comments: commentsData,
+    likes: likesData,
+    friendshipStatus: friendship,
+  };
+});
 
-    if (data.is_visible) {
-      memory.value = { ...data.memory as Memory, profiles: data.profile };
-      const { data: commentsData } = await client.from('comments').select('*, profiles(*)').eq('memory_id', memoryId);
-      comments.value = (commentsData as CommentWithProfile[]) || [];
+watch(pageDetails, (newVal) => {
+  if (newVal) {
+    profile.value = newVal.profile;
+    stats.value = newVal.stats;
+    if (newVal.is_visible && newVal.memory) {
+      memory.value = { ...newVal.memory as Memory, profiles: newVal.profile };
+      comments.value = newVal.comments;
+      likes.value = newVal.likes;
+      accessDeniedReason.value = null;
     } else {
       accessDeniedReason.value = 'permission_denied';
     }
-    
-    if (loggedInUser.value && profile.value) {
-      if (profile.value.id === loggedInUser.value.sub) {
-        friendshipStatus.value = 'self';
-      } else {
-        const { data: relationships } = await client.from('friendships').select('*').or(`and(requester_id.eq.${loggedInUser.value.sub},receiver_id.eq.${profile.value.id}),and(requester_id.eq.${profile.value.id},receiver_id.eq.${loggedInUser.value.sub})`);
-        friendshipStatus.value = getFriendshipStatus(loggedInUser.value.sub, relationships || [], profile.value.id);
-      }
-    }
-    
-    if (memory.value) {
-      useHead({
-        title: `${memory.value.title} por ${profile.value.username}`,
-        meta: [
-          { name: 'description', content: memory.value.description },
-          { property: 'og:title', content: memory.value.title },
-          { property: 'og:description', content: memory.value.description },
-          { property: 'og:image', content: memory.value.media_urls?.[0] || 'URL_DA_IMAGEM_PADRAO' },
-          { property: 'og:type', content: 'article' },
-          { name: 'twitter:card', content: 'summary_large_image' },
-        ],
-      });
-    }
-    
-  } catch (error: any) {
-    if (accessDeniedReason.value === null) toast.error(error.message);
-  } finally {
-    loading.value = false;
+    friendshipStatus.value = newVal.friendshipStatus;
+  } else {
+    accessDeniedReason.value = 'not_found';
   }
-}
+}, { immediate: true });
 
-onMounted(fetchData);
+useSeoMeta({
+  title: () => memory.value ? `${memory.value.title} por ${profile.value?.username}` : 'Memória',
+  description: () => memory.value?.description || '',
+  ogTitle: () => memory.value ? `${memory.value.title} por ${profile.value?.username}` : 'Memória',
+  ogDescription: () => memory.value?.description || '',
+  ogImage: () => memory.value?.media_urls?.[0] || profile.value?.avatar_url || 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=1000',
+  ogType: 'article',
+  twitterCard: 'summary_large_image',
+});
 
 const toggleLike = async () => {
   if (!loggedInUser.value || !memory.value || liking.value) return;

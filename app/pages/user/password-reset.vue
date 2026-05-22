@@ -19,6 +19,10 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 
+useSeoMeta({
+  title: 'Recuperar Senha'
+});
+
 const client = useSupabaseClient();
 const { $toast } = useNuxtApp();
 const email = ref('');

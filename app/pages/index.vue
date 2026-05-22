@@ -65,6 +65,10 @@
 </template>
 
 <script setup>
+useSeoMeta({
+  title: 'Preserve suas Histórias de Vida'
+})
+
 const features = [
   {
     icon: 'lucide:clock',

@@ -20,6 +20,10 @@ const memoriesForPeriod = ref<MemoryComplete[]>([]);
 const friendshipStatus = ref<FriendshipStatus | 'self'>('not_friends');
 const stats = ref({ memories: 0, followers: 0, following: 0 });
 
+useSeoMeta({
+  title: () => profile.value ? `${profile.value.username}` : 'Perfil'
+});
+
 async function fetchData() {
   const username = route.params.username as string;
   const periodId = route.params.id as string;

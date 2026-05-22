@@ -3,6 +3,16 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/main.css'],
+  app: {
+    head: {
+      title: 'Memories',
+      titleTemplate: '%s - Memories',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+      ]
+    }
+  },
   modules: [
     '@nuxtjs/supabase',
     '@nuxt/icon'

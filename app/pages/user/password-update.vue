@@ -20,6 +20,10 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 
+useSeoMeta({
+  title: 'Atualizar Senha'
+});
+
 const client = useSupabaseClient();
 const router = useRouter();
 
